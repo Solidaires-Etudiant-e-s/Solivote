@@ -1,0 +1,46 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model Vote {
+  id     Int      @id @default(autoincrement())
+  date   DateTime @default(now())
+  nom    String
+  choix  Choix[]
+  statut Statut   @default(INITAL)
+}
+
+model Choix {
+  id       Int      @id @default(autoincrement())
+  date     DateTime @default(now())
+  type     Type
+  syndicat String
+  vote     Vote     @relation(fields: [voteId], references: [id])
+  voteId   Int
+
+  @@unique([syndicat, voteId])
+}
+//
+// model Sydicat {
+//   id    Int     @id @default(autoincrement())
+//   nom   String  @unique
+//   choix Choix[]
+// }
+
+enum Type {
+  POUR
+  CONTRE
+  ABSTENTION
+  NPPV
+}
+
+enum Statut {
+  INITAL
+  EN_VOTE
+  CLOTURE
+}
