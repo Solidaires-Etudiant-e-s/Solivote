@@ -52,6 +52,8 @@ const items = ref<NavigationMenuItem[]>([
           orientation="vertical"
       />
     </UDashboardSidebar>
-    <NuxtPage/>
+    <UApp>
+      <NuxtPage/>
+    </UApp>
   </UDashboardGroup>
 </template>

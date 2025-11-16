@@ -1,6 +1,9 @@
 import {Statut} from "@prisma/client";
 
 export default defineEventHandler(async (event) => {
+    const role = await getRole(event)
+    if (role !== 'admin') throw createError({ statusCode: 403, statusMessage: 'forbidden' })
+
     const id = Number.parseInt(<string>getRouterParam(event, 'id'))
 
     try {
