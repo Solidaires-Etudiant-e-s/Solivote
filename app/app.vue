@@ -44,7 +44,7 @@ const items = ref<NavigationMenuItem[]>([
     <UDashboardSidebar>
 
       <template #header>
-        <Logo class="h-5 w-auto" />
+        <logo class="h-5 w-auto" />
       </template>
 
       <UNavigationMenu
