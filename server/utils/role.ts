@@ -6,7 +6,7 @@ const USER_DN = 'ou=users,dc=yunohost,dc=org';
 const GROUPS_DN = 'ou=groups,dc=yunohost,dc=org';
 const LDAP_URL = process.env.LDAP_URL || 'ldap://127.0.0.1:10389';
 
-export async function getRole(event: H3Event): Promise<Groupe> {
+export async function getRole(event: H3Event): Promise<User> {
     const authHeader = event.node.req.headers['authorization'];
     if (!authHeader) {
         throw createError({ statusCode: 401, statusMessage: 'missing authorization header' });
@@ -42,10 +42,10 @@ export async function getRole(event: H3Event): Promise<Groupe> {
         };
 
         if (entries.some(e => matches((e as any).cn, 'admins'))) {
-            return Groupe.ADMIN;
+            return {name: uid, role: Groupe.ADMIN};
         }
         if (entries.some(e => matches((e as any).cn, 'syndicats'))) {
-            return Groupe.SYNDICAT;
+            return {name: uid, role: Groupe.SYNDICAT};
         }
 
         throw createError({ statusCode: 403, statusMessage: 'no matching group' });
