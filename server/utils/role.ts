@@ -6,7 +6,7 @@ const USER_DN = 'ou=users,dc=yunohost,dc=org';
 const GROUPS_DN = 'ou=groups,dc=yunohost,dc=org';
 const LDAP_URL = process.env.LDAP_URL || 'ldap://127.0.0.1:10389';
 
-class User {
+export class User {
     name: string
     role: string
 

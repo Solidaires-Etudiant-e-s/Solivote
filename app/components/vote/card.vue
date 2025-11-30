@@ -1,10 +1,12 @@
 <script setup lang="ts">
-const {vote, user, userStatus, execute} = defineProps(['vote', 'user', 'userStatus', 'execute'])
+const {vote, user, execute} = defineProps(['vote', 'user', 'execute'])
 
 const del = async (id: number) => {
   await $fetch('/api/vote', {method: 'delete', body: {id: id}})
   await execute()
 }
+
+const voteData = ref(vote.choix)
 
 </script>
 
@@ -17,7 +19,7 @@ const del = async (id: number) => {
       </div>
     </template>
 
-    liste votes...
+    <UTable :data="voteData" class="flex-1 max-h-20" :loading="vote.status === 'EN_VOTE'"/>
 
     <template #footer>
       <div class="flex justify-around items-center">

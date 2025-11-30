@@ -2,7 +2,7 @@
   import * as v from "valibot";
   import type {FormSubmitEvent} from "@nuxt/ui";
 
-  const {user, userStatus, execute, currentVote, currentVoteStatus} = defineProps(['user', 'userStatus', 'execute', 'currentVote', 'currentVoteStatus'])
+  const {user, execute, currentVote, currentVoteStatus} = defineProps(['user', 'execute', 'currentVote', 'currentVoteStatus'])
 
   const schema = v.object({
     nom: v.pipe(v.string()),
@@ -45,7 +45,7 @@
     </UButton>
   </UForm>
 
-  <vote-card v-if="currentVoteStatus === 'success' && currentVote" :vote="currentVote" :user="user" :user-status="userStatus" :execute="execute">
+  <vote-card v-if="currentVoteStatus === 'success' && currentVote" :vote="currentVote" :user="user" :execute="execute">
     <UButton icon="i-lucide-vote" color="info" variant="solid" @click.prevent="stop()"> Clôturer le vote </UButton>
   </vote-card>
 </template>
