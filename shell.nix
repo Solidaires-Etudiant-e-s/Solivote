@@ -4,6 +4,7 @@ pkgs.mkShell {
     pkgs.prisma-engines
     pkgs.prisma
     pkgs.bun
+    pkgs.nodejs_24
   ];
 
   shellHook = ''
