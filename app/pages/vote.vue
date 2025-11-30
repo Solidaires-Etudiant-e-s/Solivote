@@ -8,9 +8,14 @@
     executeCurrent()
   }
 
+  const launch = async (id: number) => {
+    await $fetch(`/api/vote/start/${id}`)
+    execute()
+  }
+
 </script>
 
-<template v-if="VoteStatus">
+<template>
   <div class="w-full">
     <app-header title="votes" :user="user" :status="userStatus"/>
     <div>
@@ -28,7 +33,9 @@
     <div class="flex flex-wrap gap-5 m-5 justify-center">
       <template v-if="voteStatus === 'success' && userStatus === 'success'">
         <template v-for="vote in votes" :key="vote.id">
-          <vote-card v-if="vote.status !== 'EN_VOTE'" :vote="vote" :user="user" :user-status="userStatus" :execute="execute"/>
+          <vote-card v-if="vote.status !== 'EN_VOTE'" :vote="vote" :user="user" :user-status="userStatus" :execute="execute">
+            <UButton icon="i-lucide-rocket" color="success" variant="solid" :disabled="!!currentVote" @click.prevent="launch(vote.id)"> Lancer le vote </UButton>
+          </vote-card>
         </template>
       </template>
       <template v-for="i in 30" v-else :key="i">

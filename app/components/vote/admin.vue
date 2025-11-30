@@ -27,6 +27,11 @@
       toast.add({title: 'Error', description: "NOPE", color: 'error'})
     }
   }
+
+  const stop = async () => {
+    await $fetch(`/api/vote/stop`)
+    await execute()
+  }
 </script>
 
 <template>
@@ -40,7 +45,9 @@
     </UButton>
   </UForm>
 
-  <vote-card v-if="currentVoteStatus === 'success'" :vote="currentVote" :user="user" :user-status="userStatus" :execute="execute"/>
+  <vote-card v-if="currentVoteStatus === 'success' && currentVote" :vote="currentVote" :user="user" :user-status="userStatus" :execute="execute">
+    <UButton icon="i-lucide-vote" color="info" variant="solid" @click.prevent="stop()"> Clôturer le vote </UButton>
+  </vote-card>
 </template>
 
 <style scoped>
