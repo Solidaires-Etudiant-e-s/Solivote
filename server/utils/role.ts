@@ -6,7 +6,17 @@ const USER_DN = 'ou=users,dc=yunohost,dc=org';
 const GROUPS_DN = 'ou=groups,dc=yunohost,dc=org';
 const LDAP_URL = process.env.LDAP_URL || 'ldap://127.0.0.1:10389';
 
-export async function getRole(event: H3Event): Promise<User> {
+class User {
+    name: string
+    role: string
+
+    constructor(name: string, role: string) {
+        self.name = name
+        self.role = role
+    }
+}
+
+export async function getUser(event: H3Event): Promise<User> {
     const authHeader = event.node.req.headers['authorization'];
     if (!authHeader) {
         throw createError({ statusCode: 401, statusMessage: 'missing authorization header' });
@@ -55,6 +65,6 @@ export async function getRole(event: H3Event): Promise<User> {
 }
 
 export enum Groupe {
-    ADMIN= "admin",
+    ADMIN = "admin",
     SYNDICAT = "syndicat"
 }

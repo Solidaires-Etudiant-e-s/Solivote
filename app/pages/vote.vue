@@ -1,35 +1,37 @@
 <script setup lang="ts">
-  const {data: votes, status: voteStatus, execute} = await useLazyFetch("/api/votes")
-  const {data: user, status: roleStatus} = await useLazyFetch("/api/role")
+  const {data: votes, status: voteStatus, execute: executeVotes} = await useLazyFetch("/api/votes")
+  const {data: user, status: userStatus} = await useLazyFetch("/api/role")
+  const {data: currentVote, status: currentVoteStatus, execute: executeCurrent} = await useLazyFetch("/api/vote/current")
 
-  const {name: _, role} = user.value
+  const execute = () => {
+    executeVotes()
+    executeCurrent()
+  }
+
 </script>
 
-<template>
+<template v-if="VoteStatus">
   <div class="w-full">
-    <app-header title="votes" :user="user"/>
-    <div v-if="roleStatus === 'success'">
+    <app-header title="votes" :user="user" :status="userStatus"/>
+    <div>
 
-      <template v-if="role === 'syndicat'">
+      <p v-if="userStatus !== 'success'"> Loading... </p>
+      <template v-else-if="user.role === 'syndicat'">
         Syndicat
       </template>
-      <vote-admin v-else-if="role === 'admin'" :execute="execute"/>
+      <vote-admin v-else-if="user.role === 'admin'" :execute="execute" :current-vote="currentVote" :user="user" :user-status="userStatus" :current-vote-status="currentVoteStatus"/>
 
     </div>
 
     <USeparator class="w-full m-5"/>
 
     <div class="flex flex-wrap gap-5 m-5 justify-center">
-      <template v-if="voteStatus === 'success'">
-        <UCard v-for="vote in votes" :key="vote.id" class="basis-80">
-          <template #header>
-            {{ vote.nom }} <UBadge color="neutral"> {{vote.statut}} </UBadge>
-          </template>
-
-          content
-        </UCard>
+      <template v-if="voteStatus === 'success' && userStatus === 'success'">
+        <template v-for="vote in votes" :key="vote.id">
+          <vote-card v-if="vote.status !== 'EN_VOTE'" :vote="vote" :user="user" :user-status="userStatus" :execute="execute"/>
+        </template>
       </template>
-      <template v-for="i in 1" v-else :key="i">
+      <template v-for="i in 30" v-else :key="i">
         <USkeleton class="h-35 w-60 m-5"/>
       </template>
     </div>

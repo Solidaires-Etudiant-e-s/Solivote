@@ -1,7 +1,7 @@
-import {Statut} from "@prisma/client";
+import {VoteStatus} from "@prisma/client";
 
 export default defineEventHandler(async (event) => {
-    const role = await getRole(event)
+    const {role} = await getUser(event)
     if (role !== 'admin') throw createError({ statusCode: 403, statusMessage: 'forbidden' })
 
     const id = Number.parseInt(<string>getRouterParam(event, 'id'))
@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
                 id: id,
             },
             data: {
-                statut: Statut.EN_VOTE,
+                status: VoteStatus.EN_VOTE,
             }
         })
     }

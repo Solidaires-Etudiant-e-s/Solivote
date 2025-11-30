@@ -1,9 +1,9 @@
 import {VoteStatus} from "@prisma/client";
 
-export async function enVote() {
+export default defineEventHandler(async (event) => {
     return prisma.vote.findFirstOrThrow({
         where: {
-            status: VoteStatus.EN_VOTE,
+            status: VoteStatus.EN_VOTE
         }
-    });
-}
+    })
+})

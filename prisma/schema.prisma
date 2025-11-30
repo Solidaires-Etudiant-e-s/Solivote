@@ -8,11 +8,11 @@ datasource db {
 }
 
 model Vote {
-  id     Int      @id @default(autoincrement())
-  date   DateTime @default(now())
+  id     Int        @id @default(autoincrement())
+  date   DateTime   @default(now())
   nom    String
   choix  Choix[]
-  statut Statut   @default(INITAL)
+  status VoteStatus @default(INITAL)
 }
 
 model Choix {
@@ -39,7 +39,7 @@ enum Type {
   NPPV
 }
 
-enum Statut {
+enum VoteStatus {
   INITAL
   EN_VOTE
   CLOTURE

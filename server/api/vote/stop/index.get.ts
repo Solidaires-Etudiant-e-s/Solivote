@@ -1,17 +1,17 @@
-import {Statut} from "@prisma/client";
+import {VoteStatus} from "@prisma/client";
 import {Groupe} from "~~/server/utils/role";
 
 export default defineEventHandler(async (event) => {
-    //todo very is admin
-    const role = await getRole(event)
-    if (role !== Groupe.ADMIN) throw createError({ statusCode: 403, statusMessage: 'forbidden' })
+    //todo verify is admin
+    const user = await getUser(event)
+    if (user.role !== Groupe.ADMIN) throw createError({ statusCode: 403, statusMessage: 'forbidden' })
 
     return prisma.vote.updateMany({
         where: {
-            statut: Statut.EN_VOTE,
+            status: VoteStatus.EN_VOTE,
         },
         data: {
-            statut: Statut.CLOTURE,
+            status: VoteStatus.CLOTURE,
         }
     })
 })
