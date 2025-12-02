@@ -2,18 +2,11 @@ import { z } from 'zod'
 import {Type} from "@prisma/client";
 
 const userSchema = z.object({
-    type: z.string()
+    type: z.nativeEnum(Type)
 })
 
 export default defineEventHandler(async (event) => {
     const {type} = await readValidatedBody(event, body => userSchema.parse(body))
-
-    if (!(Object.values(Type) as string[]).includes(type)){
-        throw createError({
-            statusCode: 400,
-            statusMessage: 'Invalid vote type',
-        })
-    }
 
     const nom = <string>event.node.req.headers['ynh_user']
 
@@ -27,13 +20,10 @@ export default defineEventHandler(async (event) => {
             },
         },
         update: {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
-            type: type
+            type: type,
+            date: new Date()
         },
         create: {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-            // @ts-expect-error
             type: type,
             syndicat: nom,
             vote: {

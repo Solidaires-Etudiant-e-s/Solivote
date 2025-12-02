@@ -45,9 +45,12 @@
     </UButton>
   </UForm>
 
-  <vote-card v-if="currentVoteStatus === 'success' && currentVote" :vote="currentVote" :user="user" :execute="execute">
-    <UButton icon="i-lucide-vote" color="info" variant="solid" @click.prevent="stop()"> Clôturer le vote </UButton>
-  </vote-card>
+  <div class="flex justify-center">
+    <vote-card v-if="currentVoteStatus === 'success' && currentVote" :vote="currentVote" :user="user" :execute="execute">
+      {{currentVote.choix.length}}/??
+      <UButton icon="i-lucide-vote" color="info" variant="solid" @click.prevent="stop()"> Clôturer le vote </UButton>
+    </vote-card>
+  </div>
 </template>
 
 <style scoped>
