@@ -33,6 +33,7 @@
   "type": "module",
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.73",
-    "@iconify-json/simple-icons": "^1.2.58"
+    "@iconify-json/simple-icons": "^1.2.58",
+    "prisma": "^6"
   }
 }
