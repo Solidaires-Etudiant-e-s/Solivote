@@ -11,6 +11,12 @@ export default defineNuxtConfig({
         defaultLocale: 'fr',
     },
 
+    nitro: {
+        experimental: {
+            websocket: true
+        }
+    },
+
     modules: [
         '@nuxt/image',
         '@nuxt/ui',

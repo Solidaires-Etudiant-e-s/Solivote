@@ -24,7 +24,7 @@ const columns: TableColumn<Vote>[] = [
       const color = {
         POUR: 'success' as const,
         CONTRE: 'error' as const,
-      }[row.getValue('VoteStatus') as string]
+      }[row.getValue('type') as string]
 
       return h(UBadge, { class: 'capitalize', variant: 'subtle', color }, () =>
           row.getValue('type')
