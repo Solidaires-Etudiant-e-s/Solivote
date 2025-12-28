@@ -22,6 +22,7 @@
     })
     if (result) {
       toast.add({title: 'Success', description: result.nom, color: 'success'})
+      new_vote.nom = ""
       await execute()
     } else {
       toast.add({title: 'Error', description: "NOPE", color: 'error'})

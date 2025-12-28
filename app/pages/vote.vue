@@ -54,7 +54,7 @@
 
       <p v-if="userStatus !== 'success'"> Loading... </p>
       <template v-else-if="user.role === 'syndicat'">
-        <vote-card :vote="currentVote" :user="user" :execute="updateAll">
+        <vote-card v-if="currentVoteStatus === 'success' && currentVote" :vote="currentVote" :user="user" :execute="updateAll">
           <UButton icon="i-lucide-square-check" color="success" variant="solid" @click.prevent="voter(Type.POUR)"> Pour </UButton>
           <UButton icon="i-lucide-square-x" color="error" variant="solid" @click.prevent="voter(Type.CONTRE)"> Contre </UButton>
         </vote-card>
