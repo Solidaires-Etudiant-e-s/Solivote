@@ -36,7 +36,7 @@
       <template v-else-if="user.role === 'syndicat'">
         <vote-card :vote="currentVote" :user="user" :execute="execute">
           <UButton icon="i-lucide-square-check" color="success" variant="solid" @click.prevent="voter(Type.POUR)"> Pour </UButton>
-          <UButton icon="i-lucide-square-x" color="error" variant="solid" @click.prevent="voter(Type.CONTRE)"> Pour </UButton>
+          <UButton icon="i-lucide-square-x" color="error" variant="solid" @click.prevent="voter(Type.CONTRE)"> Contre </UButton>
         </vote-card>
       </template>
       <vote-admin v-else-if="user.role === 'admin'" :execute="execute" :current-vote="currentVote" :user="user" :user-status="userStatus" :current-vote-status="currentVoteStatus"/>
