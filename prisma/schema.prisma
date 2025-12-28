@@ -32,6 +32,20 @@ model Choix {
 //   choix Choix[]
 // }
 
+model Rencontre {
+  id Int @id @default(autoincrement())
+  nom String
+  type TypeRencontre
+}
+
+model Session {
+  id Int @id @default(autoincrement())
+  dateDebut     DateTime @default(now())
+  dateFin     DateTime @default(now())
+  rencontre Rencontre @relation(fields: [rencontreId], references: [id])
+  rencontreId Int
+}
+
 enum Type {
   POUR
   CONTRE
@@ -43,4 +57,11 @@ enum VoteStatus {
   INITAL
   EN_VOTE
   CLOTURE
+}
+
+enum TypeRencontre {
+  CONGRES
+  CF
+  BF
+  PU
 }
