@@ -1,7 +1,11 @@
 export default defineEventHandler((_event) => {
     return prisma.vote.findMany({
         include: {
-            choix: true,
+            choix: {
+                include: {
+                    syndicat: true,
+                }
+            },
         }
     });
 })

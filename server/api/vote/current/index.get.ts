@@ -6,7 +6,11 @@ export default defineEventHandler(async (event) => {
             status: VoteStatus.EN_VOTE
         },
         include: {
-            choix: true,
+            choix: {
+                include: {
+                    syndicat: true,
+                }
+            },
         }
     })
 })
