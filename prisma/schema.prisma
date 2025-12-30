@@ -19,7 +19,7 @@ model Choix {
   id         Int       @id @default(autoincrement())
   date       DateTime  @default(now())
   type       TypeChoix
-  syndicat   Sydicat   @relation(fields: [syndicatID], references: [id])
+  syndicat   Syndicat   @relation(fields: [syndicatID], references: [id])
   syndicatID Int
   vote       Vote      @relation(fields: [voteId], references: [id])
   voteId     Int
@@ -27,7 +27,7 @@ model Choix {
   @@unique([syndicatID, voteId])
 }
 
-model Sydicat {
+model Syndicat {
   id        Int         @id @default(autoincrement())
   nom       String      @unique
   rencontre Rencontre[] @relation("Presence")
@@ -40,7 +40,7 @@ model Rencontre {
   dateFin      DateTime
   type         TypeRencontre
   status       StatusRencontre @default(INITIAL)
-  participants Sydicat[]       @relation("Presence")
+  participants Syndicat[]       @relation("Presence")
   sessions     Session[]
 }
 

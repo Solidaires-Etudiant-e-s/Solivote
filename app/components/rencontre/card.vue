@@ -9,7 +9,7 @@ const del = async (id: number) => {
   await execute()
 }
 
-const rencontreData = ref<Sydicat[]>(rencontre.participant)
+const rencontreData = ref<Sydicat[]>(rencontre.participants)
 
 const columns: TableColumn<Sydicat>[] = [
   {
@@ -32,7 +32,7 @@ const date = new Date(rencontre.dateDebut)
       </div>
     </template>
 
-    <UTable :data="rencontreData" class="flex-1 max-h-50" :columns :loading="rencontre.status === 'EN_VOTE'"/>
+    <UTable :data="rencontreData" class="flex-1 max-h-50" :columns :loading="rencontre.status === 'DEMARE'"/>
 
     <template #footer>
       <div class="flex justify-around items-center">

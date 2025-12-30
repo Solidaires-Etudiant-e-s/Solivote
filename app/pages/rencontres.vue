@@ -9,18 +9,29 @@
   const { open, send, status: wsStatus } = useWebSocket('/api/ws/rencontre', {
     immediate: false,
     async onMessage() {
-      updateRencontres()
+      await updateRencontres()
+      details.value = await Promise.all(
+          rencontres.value!.map(i => $fetch(`/api/rencontre/syndicat/${i.id}`))
+      )
     },
     autoReconnect: true
   })
 
-  onMounted(() => {
+  const details = ref<string[][]>([])
+  onMounted(async () => {
     open()
+    await updateRencontres()
+    details.value = await Promise.all(
+        rencontres.value!.map(i => $fetch(`/api/rencontre/syndicat/${i.id}`))
+    )
   })
 
-  const updateAll = () => {
+  const updateAll = async () => {
     send("")
-    updateRencontres()
+    await updateRencontres()
+    details.value = await Promise.all(
+        rencontres.value!.map(i => $fetch(`/api/rencontre/syndicat/${i.id}`))
+    )
   }
 
   const new_rencontre = reactive({
@@ -48,6 +59,7 @@
         dateDebut: event.data.dates.start.toDate(),
         dateFin: event.data.dates.end.toDate(),
       },
+      ignoreResponseError: true
     })
 
     if (result) {
@@ -58,9 +70,28 @@
     } else {
       toast.add({title: 'Error', description: "NOPE", color: 'error'})
     }
-
-
   }
+
+  async function onSyndicatAdd(index: number, id: number) {
+
+    const result = await $fetch('/api/rencontre/syndicat', {
+      method: 'POST',
+      body: {
+        id,
+        syndicats: syndicat.value[index]?.map((s) => ({nom: s}))
+      }
+    })
+
+    if (result) {
+      toast.add({title: 'Success', color: 'success'})
+      syndicat.value[index] = []
+      await updateAll()
+    } else {
+      toast.add({title: 'Error', description: "NOPE", color: 'error'})
+    }
+  }
+
+  const syndicat = ref([[]])
 
 </script>
 
@@ -105,8 +136,15 @@
     </template>
 
     <template v-if="rencontreStatus === 'success' && userStatus === 'success'" #list>
-      <template v-for="rencontre in rencontres" :key="rencontre.id">
-        <rencontre-card class="basis-150" :user="user" :rencontre :execute="updateAll"/>
+      <template v-for="(rencontre, index) in rencontres" :key="rencontre.id">
+        <rencontre-card class="basis-150" :user="user" :rencontre :execute="updateAll">
+          <UForm v-if="user!.role === 'admin' && details[index]" :state="details[index]" @submit.prevent="onSyndicatAdd(index, rencontre.id)" class="flex flex-row gap-5 justify-center">
+            <UFormField label="Syndicats à ajouté:" name="syndicats" class="basis-80">
+              <UInputMenu v-model="syndicat[index]" multiple :items="details[index]"/>
+            </UFormField>
+            <UButton type="submit" icon="i-lucide-rocket" color="success" variant="solid"> Ajouté </UButton>
+          </UForm>
+        </rencontre-card>
       </template>
     </template>
   </list-creation>
