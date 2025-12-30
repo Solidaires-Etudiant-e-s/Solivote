@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from '@nuxt/ui'
+import * as locales from '@nuxt/ui/locale'
 
 const items = ref<NavigationMenuItem[]>([
   {
@@ -23,6 +24,8 @@ const items = ref<NavigationMenuItem[]>([
     to: '/'
   }
 ])
+
+const { locale } = useI18n()
 </script>
 
 <template>
@@ -38,7 +41,7 @@ const items = ref<NavigationMenuItem[]>([
           orientation="vertical"
       />
     </UDashboardSidebar>
-    <UApp>
+    <UApp :locale="locales[locale]">
       <NuxtPage/>
     </UApp>
   </UDashboardGroup>

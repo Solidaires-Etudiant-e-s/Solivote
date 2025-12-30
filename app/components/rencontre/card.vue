@@ -2,14 +2,14 @@
 import type {TableColumn} from "#ui/components/Table.vue";
 import type {Sydicat} from "@prisma/client";
 
-const {recontre, user, execute} = defineProps(['recontre', 'user', 'execute'])
+const {rencontre, user, execute} = defineProps(['rencontre', 'user', 'execute'])
 
 const del = async (id: number) => {
   await $fetch('/api/rencontre', {method: 'delete', body: {id: id}})
   await execute()
 }
 
-const rencontreData = ref<Sydicat[]>(recontre.participant)
+const rencontreData = ref<Sydicat[]>(rencontre.participant)
 
 const columns: TableColumn<Sydicat>[] = [
   {
@@ -18,18 +18,21 @@ const columns: TableColumn<Sydicat>[] = [
   }
 ]
 
+const { locale } = useI18n()
+const date = new Date(rencontre.dateDebut)
+
 </script>
 
 <template>
   <UCard>
     <template #header>
       <div class="flex justify-between items-center">
-        {{ recontre.nom }}
-        <UButton v-if="user.role === 'admin'" icon="i-lucide-trash" color="error" variant="solid" @click.prevent="del(recontre.id)"/>
+        {{ rencontre.type }} de {{ new Intl.DateTimeFormat(locale, { month: "long" }).format(date) }} {{ date.getFullYear() }}
+        <UButton v-if="user.role === 'admin'" icon="i-lucide-trash" color="error" variant="solid" @click.prevent="del(rencontre.id)"/>
       </div>
     </template>
 
-    <UTable :data="rencontreData" class="flex-1 max-h-50" :columns :loading="recontre.status === 'EN_VOTE'"/>
+    <UTable :data="rencontreData" class="flex-1 max-h-50" :columns :loading="rencontre.status === 'EN_VOTE'"/>
 
     <template #footer>
       <div class="flex justify-around items-center">
