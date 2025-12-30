@@ -17,7 +17,6 @@ const columns: TableColumn<Vote>[] = [
     accessorKey: 'syndicat.nom',
     header: 'Syndicat',
     cell: ({ row }) => {
-      console.log(row.getAllCells())
       return (row.getValue('syndicat_nom') as string).charAt(0).toUpperCase() + (row.getValue('syndicat_nom') as string).slice(1)
     }
   },

@@ -8,28 +8,14 @@ const items = ref<NavigationMenuItem[]>([
     to: '/vote',
   },
   {
+    label: 'Rencontres',
+    icon: 'i-lucide-calendar-range',
+    to: '/rencontres'
+  },
+  {
     label: 'Syndicats',
     icon: 'i-lucide-users',
-    children: [
-      {
-        label: 'List',
-        icon: 'i-lucide-database',
-        description: 'Define shortcuts for your application.',
-        to: '/'
-      },
-      {
-        label: 'JSP',
-        icon: 'i-lucide-file-text',
-        description: 'Display a modal/slideover within your application.',
-        to: '/'
-      },
-      {
-        label: 'Autre',
-        icon: 'i-lucide-file-text',
-        description: 'Display a toast within your application.',
-        to: '/'
-      }
-    ]
+    to: '/syndicats'
   },
   {
     label: 'Aide',

@@ -1,14 +1,14 @@
 <script setup lang="ts">
-  import * as v from "valibot";
   import type {FormSubmitEvent} from "@nuxt/ui";
+  import {z} from "zod";
 
   const {user, execute, currentVote, currentVoteStatus} = defineProps(['user', 'execute', 'currentVote', 'currentVoteStatus'])
 
-  const schema = v.object({
-    nom: v.pipe(v.string()),
+  const schema = z.object({
+    nom: z.string().min(1)
   })
 
-  type Schema = v.InferOutput<typeof schema>
+  type Schema = z.output<typeof schema>
 
   const new_vote = reactive({
     nom: '',

@@ -1,13 +1,15 @@
 import { z } from 'zod'
 
 const userSchema = z.object({
-    nom: z.string().min(1)
+    id: z.number()
 })
 
 export default defineEventHandler(async (event) => {
     const data = await readValidatedBody(event, body => userSchema.parse(body))
 
-    return prisma.vote.create({
-        data: data
+    return prisma.rencontre.delete({
+        where: {
+            id: data.id
+        },
     })
 })

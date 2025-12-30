@@ -35,11 +35,12 @@ model Sydicat {
 }
 
 model Rencontre {
-  id          Int           @id @default(autoincrement())
-  nom         String
-  type        TypeRencontre
-  participant Sydicat[]     @relation("Presence")
-  sessions    Session[]
+  id           Int             @id @default(autoincrement())
+  nom          String
+  type         TypeRencontre
+  status       StatusRencontre @default(INITIAL)
+  participants Sydicat[]       @relation("Presence")
+  sessions     Session[]
 }
 
 model Session {
@@ -68,4 +69,10 @@ enum TypeRencontre {
   CF
   BF
   PU
+}
+
+enum StatusRencontre {
+  INITIAL
+  DEMARE
+  CLOTURE
 }
