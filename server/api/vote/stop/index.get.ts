@@ -1,4 +1,4 @@
-import {VoteStatus} from "@prisma/client";
+import {StatusVote} from "@prisma/client";
 import {Groupe} from "~~/server/utils/role";
 
 export default defineEventHandler(async (event) => {
@@ -8,10 +8,10 @@ export default defineEventHandler(async (event) => {
 
     return prisma.vote.updateMany({
         where: {
-            status: VoteStatus.EN_VOTE,
+            status: StatusVote.EN_VOTE,
         },
         data: {
-            status: VoteStatus.CLOTURE,
+            status: StatusVote.CLOTURE,
         }
     })
 })

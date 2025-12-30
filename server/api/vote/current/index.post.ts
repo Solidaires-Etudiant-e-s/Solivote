@@ -1,8 +1,8 @@
 import { z } from 'zod'
-import {Type} from "@prisma/client";
+import {TypeChoix} from "@prisma/client";
 
 const userSchema = z.object({
-    type: z.nativeEnum(Type)
+    type: z.nativeEnum(TypeChoix)
 })
 
 export default defineEventHandler(async (event) => {

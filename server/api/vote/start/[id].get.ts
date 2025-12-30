@@ -1,4 +1,4 @@
-import {VoteStatus} from "@prisma/client";
+import {StatusVote} from "@prisma/client";
 
 export default defineEventHandler(async (event) => {
     const {role} = await getUser(event)
@@ -14,7 +14,7 @@ export default defineEventHandler(async (event) => {
                 id: id,
             },
             data: {
-                status: VoteStatus.EN_VOTE,
+                status: StatusVote.EN_VOTE,
             }
         })
     }

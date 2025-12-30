@@ -1,9 +1,9 @@
-import {VoteStatus} from "@prisma/client";
+import {StatusVote} from "@prisma/client";
 
 export async function enVote() {
     return prisma.vote.findFirstOrThrow({
         where: {
-            status: VoteStatus.EN_VOTE,
+            status: StatusVote.EN_VOTE,
         }
     });
 }

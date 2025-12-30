@@ -12,16 +12,16 @@ model Vote {
   date   DateTime   @default(now())
   nom    String
   choix  Choix[]
-  status VoteStatus @default(INITAL)
+  status StatusVote @default(INITAL)
 }
 
 model Choix {
-  id         Int      @id @default(autoincrement())
-  date       DateTime @default(now())
-  type       Type
-  syndicat   Sydicat  @relation(fields: [syndicatID], references: [id])
+  id         Int       @id @default(autoincrement())
+  date       DateTime  @default(now())
+  type       TypeChoix
+  syndicat   Sydicat   @relation(fields: [syndicatID], references: [id])
   syndicatID Int
-  vote       Vote     @relation(fields: [voteId], references: [id])
+  vote       Vote      @relation(fields: [voteId], references: [id])
   voteId     Int
 
   @@unique([syndicatID, voteId])
@@ -36,7 +36,8 @@ model Sydicat {
 
 model Rencontre {
   id           Int             @id @default(autoincrement())
-  nom          String
+  dateDebut    DateTime
+  dateFin      DateTime
   type         TypeRencontre
   status       StatusRencontre @default(INITIAL)
   participants Sydicat[]       @relation("Presence")
@@ -45,20 +46,20 @@ model Rencontre {
 
 model Session {
   id          Int       @id @default(autoincrement())
-  dateDebut   DateTime  @default(now())
-  dateFin     DateTime  @default(now())
+  dateDebut   DateTime
+  dateFin     DateTime
   rencontre   Rencontre @relation(fields: [rencontreId], references: [id])
   rencontreId Int
 }
 
-enum Type {
+enum TypeChoix {
   POUR
   CONTRE
   ABSTENTION
   NPPV
 }
 
-enum VoteStatus {
+enum StatusVote {
   INITAL
   EN_VOTE
   CLOTURE
