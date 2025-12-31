@@ -26,12 +26,14 @@
     )
   })
 
-  const updateAll = async () => {
+  const updateAll = async (self: boolean = true) => {
     send("")
-    await updateRencontres()
-    details.value = await Promise.all(
-        rencontres.value!.map(i => $fetch(`/api/rencontre/syndicat/${i.id}`))
-    )
+    if (self){
+      await updateRencontres()
+      details.value = await Promise.all(
+          rencontres.value!.map(i => $fetch(`/api/rencontre/syndicat/${i.id}`))
+      )
+    }
   }
 
   const new_rencontre = reactive({
@@ -137,7 +139,7 @@
 
     <template v-if="rencontreStatus === 'success' && userStatus === 'success'" #list>
       <template v-for="(rencontre, index) in rencontres" :key="rencontre.id">
-        <rencontre-card class="basis-150" :user="user" :rencontre :execute="updateAll">
+        <rencontre-card class="basis-150 shrink-0" :user="user" :rencontre :execute="updateAll">
           <UForm v-if="user!.role === 'admin' && details[index]" :state="details[index]" @submit.prevent="onSyndicatAdd(index, rencontre.id)" class="flex flex-row gap-5 justify-center">
             <UFormField label="Syndicats à ajouté:" name="syndicats" class="basis-80">
               <UInputMenu v-model="syndicat[index]" multiple :items="details[index]"/>
