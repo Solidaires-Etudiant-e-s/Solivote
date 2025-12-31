@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type {TableColumn} from "#ui/components/Table.vue";
-import type {Vote} from "@prisma/client";
+import type {Choix} from "@prisma/client";
 import {UBadge} from "#components";
 
 const {vote, user, execute} = defineProps(['vote', 'user', 'execute'])
@@ -10,9 +10,7 @@ const del = async (id: number) => {
   await execute()
 }
 
-const voteData = ref<Vote[]>(vote.choix)
-
-const columns: TableColumn<Vote>[] = [
+const columns: TableColumn<Choix>[] = [
   {
     accessorKey: 'syndicat.nom',
     header: 'Syndicat',
@@ -50,11 +48,11 @@ const columns: TableColumn<Vote>[] = [
     <template #header>
       <div class="flex justify-between items-center">
         {{ vote.nom }}
-        <UButton v-if="user.role === 'admin'" icon="i-lucide-trash" color="error" variant="solid" @click.prevent="del(vote.id)"/>
+        <UButton v-if="user.role === 'admin'" :disabled="vote.choix.lenght !== 0" icon="i-lucide-trash" color="error" variant="solid" @click.prevent="del(vote.id)"/>
       </div>
     </template>
 
-    <UTable :data="voteData" class="flex-1 max-h-50" :columns :loading="vote.status === 'EN_VOTE'"/>
+    <UTable :data="vote.choix" class="flex-1 max-h-50" :columns :loading="vote.status === 'EN_VOTE'"/>
 
     <template #footer>
       <div class="flex justify-around items-center">

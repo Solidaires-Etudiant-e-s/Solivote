@@ -7,6 +7,9 @@ export default defineEventHandler((_event) => {
                 }
             },
             sessions: true,
+        },
+        orderBy: {
+            dateDebut: 'desc',
         }
     });
 })

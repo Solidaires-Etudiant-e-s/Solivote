@@ -17,6 +17,9 @@ export default defineEventHandler(async (event) => {
     return (await prisma.syndicat.findMany({
         select: {
             nom: true
+        },
+        orderBy: {
+            nom: 'asc'
         }
     })).map(a => a.nom).filter((a => !presents.includes(a)));
 })

@@ -10,7 +10,7 @@ export default defineEventHandler(async (event) => {
 
     const nom = <string>event.node.req.headers['ynh_user']
 
-    const syndicat = await prisma.sydicat.upsert({
+    const syndicat = await prisma.syndicat.upsert({
         where: {
             nom
         },
@@ -24,8 +24,8 @@ export default defineEventHandler(async (event) => {
 
     return prisma.choix.upsert({
         where: {
-            syndicatID_voteId: {
-                syndicatID: syndicat.id,
+            syndicatId_voteId: {
+                syndicatId: syndicat.id,
                 voteId: vote.id
             },
         },

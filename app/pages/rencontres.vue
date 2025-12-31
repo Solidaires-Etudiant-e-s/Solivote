@@ -5,14 +5,23 @@
 
   const {data: rencontres, status: rencontreStatus, execute: updateRencontres} = useLazyFetch("/api/rencontre")
   const {data: user, status: userStatus} = await useLazyFetch("/api/role")
+  watch(user, async () => {
+    await updateRencontresAndDetails()
+  })
+
+  const updateRencontresAndDetails = async () => {
+    await updateRencontres()
+    if( user!.value!.role === 'admin') {
+      details.value = await Promise.all(
+          rencontres.value!.map(i => $fetch(`/api/rencontre/syndicat/${i.id}`))
+      )
+    }
+  }
 
   const { open, send, status: wsStatus } = useWebSocket('/api/ws/rencontre', {
     immediate: false,
     async onMessage() {
-      await updateRencontres()
-      details.value = await Promise.all(
-          rencontres.value!.map(i => $fetch(`/api/rencontre/syndicat/${i.id}`))
-      )
+      await updateRencontresAndDetails()
     },
     autoReconnect: true
   })
@@ -20,19 +29,12 @@
   const details = ref<string[][]>([])
   onMounted(async () => {
     open()
-    await updateRencontres()
-    details.value = await Promise.all(
-        rencontres.value!.map(i => $fetch(`/api/rencontre/syndicat/${i.id}`))
-    )
   })
 
   const updateAll = async (self: boolean = true) => {
     send("")
     if (self){
-      await updateRencontres()
-      details.value = await Promise.all(
-          rencontres.value!.map(i => $fetch(`/api/rencontre/syndicat/${i.id}`))
-      )
+      await updateRencontresAndDetails()
     }
   }
 
@@ -140,7 +142,7 @@
     <template v-if="rencontreStatus === 'success' && userStatus === 'success'" #list>
       <template v-for="(rencontre, index) in rencontres" :key="rencontre.id">
         <rencontre-card class="basis-150 shrink-0" :user="user" :rencontre :execute="updateAll">
-          <UForm v-if="user!.role === 'admin' && details[index]" :state="details[index]" @submit.prevent="onSyndicatAdd(index, rencontre.id)" class="flex flex-row gap-5 justify-center">
+          <UForm v-if="user!.role === 'admin' && details[index]" :state="details[index]" class="flex flex-row gap-5 justify-center" @submit.prevent="onSyndicatAdd(index, rencontre.id)">
             <UFormField label="Syndicats à ajouté:" name="syndicats" class="basis-80">
               <UInputMenu v-model="syndicat[index]" multiple :items="details[index]"/>
             </UFormField>

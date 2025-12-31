@@ -1,5 +1,5 @@
 <script setup lang="ts">
-  import {Type} from "@prisma/client";
+  import {TypeChoix} from "@prisma/client";
 
   const {data: votes, status: voteStatus, execute: updateVotes} = await useLazyFetch("/api/votes")
   const {data: user, status: userStatus} = await useLazyFetch("/api/role")
@@ -35,14 +35,15 @@
     updateAll()
   }
 
-  const voter = async (type: Type) => {
+  const voter = async (type: TypeChoix) => {
     await $fetch(`/api/vote/current`, {
       method: 'POST',
       body: {
         type: type
       }
     })
-    updateAll()
+    send('current')
+    updateCurrent()
   }
 
 </script>
@@ -56,9 +57,10 @@
     <template #creation>
         <p v-if="userStatus !== 'success'"> Loading... </p>
         <template v-else-if="user!.role === 'syndicat'">
+          {{currentVote}}
           <vote-card v-if="currentVote" :vote="currentVote" :user="user" :execute="updateAll">
-            <UButton icon="i-lucide-square-check" color="success" variant="solid" @click.prevent="voter(Type.POUR)"> Pour </UButton>
-            <UButton icon="i-lucide-square-x" color="error" variant="solid" @click.prevent="voter(Type.CONTRE)"> Contre </UButton>
+            <UButton icon="i-lucide-square-check" color="success" variant="solid" @click.prevent="voter(TypeChoix.POUR)"> Pour </UButton>
+            <UButton icon="i-lucide-square-x" color="error" variant="solid" @click.prevent="voter(TypeChoix.CONTRE)"> Contre </UButton>
           </vote-card>
         </template>
         <vote-admin v-else-if="user!.role === 'admin'" :execute="updateAll" :current-vote="currentVote" :user="user" :current-vote-status="currentVoteStatus"/>
