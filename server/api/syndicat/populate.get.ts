@@ -18,5 +18,5 @@ export default defineEventHandler(async (event) => {
         })
     }
 
-    return $fetch('/api/syndicats')
+    return $fetch('/api/syndicat')
 })

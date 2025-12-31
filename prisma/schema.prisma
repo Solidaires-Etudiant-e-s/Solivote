@@ -51,16 +51,17 @@ model Rencontre {
   type      TypeRencontre
   status    StatusRencontre @default(INITIAL)
   mandats   mandat[]        @relation()
-  sessions  Session[]
+  // sessions  Session[]
 }
 
-model Session {
-  id          Int       @id @default(autoincrement())
-  dateDebut   DateTime
-  dateFin     DateTime
-  rencontre   Rencontre @relation(fields: [rencontreId], references: [id])
-  rencontreId Int
-}
+//
+// model Session {
+//   id          Int       @id @default(autoincrement())
+//   dateDebut   DateTime
+//   dateFin     DateTime
+//   rencontre   Rencontre @relation(fields: [rencontreId], references: [id])
+//   rencontreId Int
+// }
 
 enum TypeChoix {
   POUR

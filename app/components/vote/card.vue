@@ -48,7 +48,7 @@ const columns: TableColumn<Choix>[] = [
     <template #header>
       <div class="flex justify-between items-center">
         {{ vote.nom }}
-        <UButton v-if="user.role === 'admin'" :disabled="vote.choix.lenght !== 0" icon="i-lucide-trash" color="error" variant="solid" @click.prevent="del(vote.id)"/>
+        <UButton v-if="user.role === 'admin'" :disabled="vote.choix.length !== 0" icon="i-lucide-trash" color="error" variant="solid" @click.prevent="del(vote.id)"/>
       </div>
     </template>
 
