@@ -19,29 +19,39 @@ model Choix {
   id         Int       @id @default(autoincrement())
   date       DateTime  @default(now())
   type       TypeChoix
-  syndicat   Syndicat   @relation(fields: [syndicatID], references: [id])
-  syndicatID Int
+  syndicat   Syndicat  @relation(fields: [syndicatId], references: [id])
+  syndicatId Int
   vote       Vote      @relation(fields: [voteId], references: [id])
   voteId     Int
 
-  @@unique([syndicatID, voteId])
+  @@unique([syndicatId, voteId])
 }
 
 model Syndicat {
-  id        Int         @id @default(autoincrement())
-  nom       String      @unique
-  rencontre Rencontre[] @relation("Presence")
-  choix     Choix[]
+  id      Int      @id @default(autoincrement())
+  nom     String   @unique
+  mandats mandat[] @relation()
+  choix   Choix[]
+}
+
+model mandat {
+  syndicat    Syndicat  @relation(fields: [syndicatId], references: [id])
+  syndicatId  Int
+  rencontre   Rencontre @relation(fields: [rencontreId], references: [id])
+  rencontreId Int
+  mandat      Int       @default(1)
+
+  @@id([syndicatId, rencontreId])
 }
 
 model Rencontre {
-  id           Int             @id @default(autoincrement())
-  dateDebut    DateTime
-  dateFin      DateTime
-  type         TypeRencontre
-  status       StatusRencontre @default(INITIAL)
-  participants Syndicat[]       @relation("Presence")
-  sessions     Session[]
+  id        Int             @id @default(autoincrement())
+  dateDebut DateTime
+  dateFin   DateTime
+  type      TypeRencontre
+  status    StatusRencontre @default(INITIAL)
+  mandats   mandat[]        @relation()
+  sessions  Session[]
 }
 
 model Session {

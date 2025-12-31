@@ -1,7 +1,11 @@
 export default defineEventHandler((_event) => {
     return prisma.rencontre.findMany({
         include: {
-            participants: true,
+            mandats: {
+                include: {
+                    syndicat: true,
+                }
+            },
             sessions: true,
         }
     });

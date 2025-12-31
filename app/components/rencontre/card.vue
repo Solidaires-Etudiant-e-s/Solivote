@@ -1,6 +1,6 @@
 <script setup lang="ts">
 import type {TableColumn} from "#ui/components/Table.vue";
-import type {Sydicat} from "@prisma/client";
+import type {mandat} from "@prisma/client";
 
 const {rencontre, user, execute} = defineProps(['rencontre', 'user', 'execute'])
 
@@ -9,14 +9,32 @@ const del = async (id: number) => {
   await execute()
 }
 
-const rencontreData = ref<Sydicat[]>(rencontre.participants)
+const rencontreData = ref<mandat[]>(rencontre.mandats)
 
-const columns: TableColumn<Sydicat>[] = [
+const columns: TableColumn<mandat>[] = [
   {
-    accessorKey: 'nom',
+    accessorKey: 'syndicat.nom',
     header: 'Syndicats présent',
+  },
+  {
+    accessorKey: 'mandat',
+    header: 'Mandats'
+  },
+  {
+    id: 'action'
   }
 ]
+
+const delSyndicat = async (id: number) => {
+  await $fetch('/api/rencontre/syndicat', {
+    method: 'delete',
+    body: {
+      id: rencontre.id,
+      syndicatID: id,
+    }
+  })
+  await execute()
+}
 
 const { locale } = useI18n()
 const date = new Date(rencontre.dateDebut)
@@ -32,7 +50,11 @@ const date = new Date(rencontre.dateDebut)
       </div>
     </template>
 
-    <UTable :data="rencontreData" class="flex-1 max-h-50" :columns :loading="rencontre.status === 'DEMARE'"/>
+    <UTable :data="rencontreData" class="flex-1 max-h-50" :columns :loading="rencontre.status === 'DEMARE'">
+      <template #action-cell="{ row }">
+        <UButton color="error" icon="i-lucide-trash" @click="delSyndicat(row.original!.syndicatId)"/>
+      </template>
+    </UTable>
 
     <template #footer>
       <div class="flex justify-around items-center">

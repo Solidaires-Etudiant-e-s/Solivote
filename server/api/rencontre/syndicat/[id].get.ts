@@ -6,9 +6,13 @@ export default defineEventHandler(async (event) => {
             id
         },
         select: {
-            participants: true
+            mandats: {
+                include: {
+                    syndicat: true
+                }
+            }
         }
-    })).participants.map(a => a.nom);
+    })).mandats.map(a => a.syndicat.nom);
 
     return (await prisma.syndicat.findMany({
         select: {

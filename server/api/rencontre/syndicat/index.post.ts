@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import rencontre from '../../ws/rencontre'
 
 const syndicatsSchema = z.object({
     id: z.number(),
@@ -13,14 +14,18 @@ export default defineEventHandler(async (event) => {
 
     const data = await readValidatedBody(event, body => syndicatsSchema.parse(body))
 
-    return prisma.rencontre.update({
-        where: {
-            id: data.id
-        },
-        data: {
-            participants: {
-                connect: data.syndicats
+    return await Promise.all(
+        data.syndicats.map(async (nom) => {
+            const syndicat = await prisma.syndicat.findUnique({ where: nom });
+            if (!syndicat) {
+                throw new Error(`Syndicat ${nom} not found`);
             }
-        }
-    })
+            return prisma.mandat.create({
+                data: {
+                    syndicatId: syndicat.id,
+                    rencontreId: data.id,
+                },
+            });
+        })
+    )
 })
