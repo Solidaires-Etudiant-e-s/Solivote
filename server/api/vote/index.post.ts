@@ -7,7 +7,21 @@ const userSchema = z.object({
 export default defineEventHandler(async (event) => {
     const data = await readValidatedBody(event, body => userSchema.parse(body))
 
+    const current = await currentRencontre()
+
+    if (!current){
+        throw createError({
+            statusCode: 400,
+            statusMessage: 'No rencontre is currently started',
+        })
+    }
+
     return prisma.vote.create({
-        data: data
+        data: {
+            nom: data.nom,
+            rencontre: {
+                connect: current
+            }
+        }
     })
 })

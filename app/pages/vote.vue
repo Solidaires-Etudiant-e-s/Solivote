@@ -4,6 +4,7 @@
   const {data: votes, status: voteStatus, execute: updateVotes} = await useLazyFetch("/api/votes")
   const {data: user, status: userStatus} = await useLazyFetch("/api/role")
   const {data: currentVote, status: currentVoteStatus, execute: updateCurrent} = await useLazyFetch("/api/vote/current")
+  const {data: currentRencontre, status: currentRencontreStatus, execute: updateCurrentRencontre} = await useLazyFetch("/api/rencontre/current")
 
   const { open, send, status: wsStatus } = useWebSocket('/api/ws/vote', {
     immediate: false,
@@ -16,6 +17,7 @@
           await updateCurrent()
         }
       }
+      await updateCurrentRencontre()
     },
   })
 
@@ -28,6 +30,7 @@
     updateVotes()
     send('current')
     updateCurrent()
+    updateCurrentRencontre()
   }
 
   const launch = async (id: number) => {
@@ -51,13 +54,13 @@
 <template>
   <list-creation>
     <template #header>
-      <app-header title="votes" :user="user" :status="userStatus" :ws-status="wsStatus"/>
+      <app-header v-if="currentRencontreStatus === 'success' && currentRencontre" :title="getRencontreName(currentRencontre)" :user="user" :status="userStatus" :ws-status="wsStatus"/>
+      <app-header v-else title="Votes" :user="user" :status="userStatus" :ws-status="wsStatus"/>
     </template>
 
     <template #creation>
         <p v-if="userStatus !== 'success'"> Loading... </p>
         <template v-else-if="user!.role === 'syndicat'">
-          {{currentVote}}
           <vote-card v-if="currentVote" :vote="currentVote" :user="user" :execute="updateAll">
             <UButton icon="i-lucide-square-check" color="success" variant="solid" @click.prevent="voter(TypeChoix.POUR)"> Pour </UButton>
             <UButton icon="i-lucide-square-x" color="error" variant="solid" @click.prevent="voter(TypeChoix.CONTRE)"> Contre </UButton>
@@ -69,7 +72,7 @@
     <template v-if="voteStatus === 'success' && userStatus === 'success'" #list>
       <template v-for="vote in votes" :key="vote.id">
         <vote-card v-if="vote.status !== 'EN_VOTE'" class="basis-100" :vote="vote" :user="user" :execute="updateAll">
-          <UButton icon="i-lucide-rocket" color="success" variant="solid" :disabled="!!currentVote" @click.prevent="launch(vote.id)"> Lancer le vote </UButton>
+          <UButton v-if="user!.role === 'admin'" icon="i-lucide-rocket" color="success" variant="solid" :disabled="!!currentVote" @click.prevent="launch(vote.id)"> Lancer le vote </UButton>
         </vote-card>
       </template>
     </template>

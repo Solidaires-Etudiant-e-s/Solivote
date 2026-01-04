@@ -1,6 +1,6 @@
 <script setup lang="ts">
 
-  import {TypeRencontre} from "@prisma/client";
+  import {StatusRencontre, TypeRencontre} from "@prisma/client";
   import { CalendarDate } from '@internationalized/date'
 
   const {data: rencontres, status: rencontreStatus, execute: updateRencontres} = useLazyFetch("/api/rencontre")
@@ -95,6 +95,21 @@
     }
   }
 
+  const launch = async (id: number) => {
+    await $fetch(`/api/rencontre/start/${id}`)
+    updateAll()
+  }
+
+  const stop = async () => {
+    await $fetch(`/api/rencontre/stop`)
+    updateAll()
+  }
+
+  const reinit = async (id: number) => {
+    await $fetch(`/api/rencontre/reinit/${id}`)
+    updateAll()
+  }
+
   const syndicat = ref([[]])
 
 </script>
@@ -142,12 +157,18 @@
     <template v-if="rencontreStatus === 'success' && userStatus === 'success'" #list>
       <template v-for="(rencontre, index) in rencontres" :key="rencontre.id">
         <rencontre-card class="basis-150 shrink-0" :user="user" :rencontre :execute="updateAll">
-          <UForm v-if="user!.role === 'admin' && details[index]" :state="details[index]" class="flex flex-row gap-5 justify-center" @submit.prevent="onSyndicatAdd(index, rencontre.id)">
-            <UFormField label="Syndicats à ajouté:" name="syndicats" class="basis-80">
-              <UInputMenu v-model="syndicat[index]" multiple :items="details[index]"/>
-            </UFormField>
-            <UButton type="submit" icon="i-lucide-rocket" color="success" variant="solid"> Ajouté </UButton>
-          </UForm>
+          <template v-if="user!.role === 'admin'">
+            <UForm v-if="details[index] && ![StatusRencontre.DEMARE, StatusRencontre.CLOTURE].includes(rencontre.status)" :state="details[index]" class="flex flex-row gap-5 justify-center" @submit.prevent="onSyndicatAdd(index, rencontre.id)">
+              <UFormField label="Syndicats à ajouté:" name="syndicats" class="basis-80">
+                <UInputMenu v-model="syndicat[index]" multiple :items="details[index]"/>
+              </UFormField>
+              <UButton type="submit" icon="i-lucide-square-plus" color="success" variant="solid"/>
+            </UForm>
+
+            <UButton v-if="rencontre.status === StatusRencontre.INITIAL" icon="i-lucide-rocket" color="success" variant="solid" @click.prevent="launch(rencontre.id)"> Démaré la rencontre </UButton>
+            <UButton v-if="rencontre.status === StatusRencontre.DEMARE" icon="i-lucide-octagon-minus" color="error" variant="solid" @click.prevent="stop()"> Clorturé la rencontre </UButton>
+            <UButton v-if="rencontre.status === StatusRencontre.CLOTURE" icon="i-lucide-rotate-ccw" color="warning" variant="solid" @click.prevent="reinit(rencontre.id)"> Reparamétré la rencontre </UButton>
+          </template>
         </rencontre-card>
       </template>
     </template>

@@ -8,11 +8,13 @@ datasource db {
 }
 
 model Vote {
-  id     Int        @id @default(autoincrement())
-  date   DateTime   @default(now())
-  nom    String
-  choix  Choix[]
-  status StatusVote @default(INITAL)
+  id          Int        @id @default(autoincrement())
+  date        DateTime   @default(now())
+  nom         String
+  choix       Choix[]
+  rencontre   Rencontre  @relation(fields: [rencontreId], references: [id])
+  rencontreId Int
+  status      StatusVote @default(INITAL)
 }
 
 model Choix {
@@ -30,11 +32,11 @@ model Choix {
 model Syndicat {
   id      Int      @id @default(autoincrement())
   nom     String   @unique
-  mandats mandat[] @relation()
+  mandats Mandat[] @relation()
   choix   Choix[]
 }
 
-model mandat {
+model Mandat {
   syndicat    Syndicat  @relation(fields: [syndicatId], references: [id])
   syndicatId  Int
   rencontre   Rencontre @relation(fields: [rencontreId], references: [id])
@@ -50,7 +52,8 @@ model Rencontre {
   dateFin   DateTime
   type      TypeRencontre
   status    StatusRencontre @default(INITIAL)
-  mandats   mandat[]        @relation()
+  mandats   Mandat[]        @relation()
+  votes     Vote[]
   // sessions  Session[]
 }
 

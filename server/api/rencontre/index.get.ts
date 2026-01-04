@@ -5,11 +5,11 @@ export default defineEventHandler((_event) => {
                 include: {
                     syndicat: true,
                 }
-            },
-            sessions: true,
+            }
         },
-        orderBy: {
-            dateDebut: 'desc',
-        }
+        orderBy: [
+            {status: 'asc'},
+            {dateDebut: 'desc'},
+        ]
     });
 })
