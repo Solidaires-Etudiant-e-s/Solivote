@@ -1,15 +1,15 @@
-import { z } from 'zod'
+import { z } from "zod";
 
 const userSchema = z.object({
-    id: z.number()
-})
+  id: z.number(),
+});
 
 export default defineEventHandler(async (event) => {
-    const data = await readValidatedBody(event, body => userSchema.parse(body))
+  const data = await readValidatedBody(event, (body) => userSchema.parse(body));
 
-    return prisma.vote.delete({
-        where: {
-            id: data.id
-        },
-    })
-})
+  return prisma.vote.delete({
+    where: {
+      id: data.id,
+    },
+  });
+});

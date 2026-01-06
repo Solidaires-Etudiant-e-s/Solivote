@@ -1,15 +1,16 @@
-import {StatusVote} from "@prisma/client";
+import { StatusVote } from "@prisma/client";
 
 export default defineEventHandler(async (event) => {
-    const user = await getUser(event)
-    if (user.role !== Groupe.ADMIN) throw createError({ statusCode: 403, statusMessage: 'forbidden' })
+  const user = await getUser(event);
+  if (user.role !== Groupe.ADMIN)
+    throw createError({ statusCode: 403, statusMessage: "forbidden" });
 
-    return prisma.vote.updateMany({
-        where: {
-            status: StatusVote.EN_VOTE,
-        },
-        data: {
-            status: StatusVote.CLOTURE,
-        }
-    })
-})
+  return prisma.vote.updateMany({
+    where: {
+      status: StatusVote.EN_VOTE,
+    },
+    data: {
+      status: StatusVote.CLOTURE,
+    },
+  });
+});

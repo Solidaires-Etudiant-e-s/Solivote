@@ -1,16 +1,16 @@
-import {StatusVote} from "@prisma/client";
+import { StatusVote } from "@prisma/client";
 
-export default defineEventHandler(async (event) => {
-    return prisma.vote.findFirst({
-        where: {
-            status: StatusVote.EN_VOTE
-        },
+export default defineEventHandler(async () => {
+  return prisma.vote.findFirst({
+    where: {
+      status: StatusVote.EN_VOTE,
+    },
+    include: {
+      choix: {
         include: {
-            choix: {
-                include: {
-                    syndicat: true,
-                }
-            },
-        }
-    })
-})
+          syndicat: true,
+        },
+      },
+    },
+  });
+});

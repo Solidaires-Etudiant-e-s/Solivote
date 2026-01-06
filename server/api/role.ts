@@ -1,3 +1,3 @@
 export default defineEventHandler(async (event) => {
-    return await getUser(event)
-})
+  return await getUser(event);
+});

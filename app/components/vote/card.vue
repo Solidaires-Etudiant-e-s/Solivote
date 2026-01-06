@@ -1,46 +1,48 @@
 <script setup lang="ts">
-import type {TableColumn} from "#ui/components/Table.vue";
-import type {Choix} from "@prisma/client";
-import {UBadge} from "#components";
+import type { TableColumn } from "#ui/components/Table.vue";
+import type { Choix } from "@prisma/client";
+import { UBadge } from "#components";
 
-const {vote, user, execute} = defineProps(['vote', 'user', 'execute'])
+const { vote, user, execute } = defineProps(["vote", "user", "execute"]);
 
 const del = async (id: number) => {
-  await $fetch('/api/vote', {method: 'delete', body: {id: id}})
-  await execute()
-}
+  await $fetch("/api/vote", { method: "delete", body: { id: id } });
+  await execute();
+};
 
 const columns: TableColumn<Choix>[] = [
   {
-    accessorKey: 'syndicat.nom',
-    header: 'Syndicat',
+    accessorKey: "syndicat.nom",
+    header: "Syndicat",
     cell: ({ row }) => {
-      return (row.getValue('syndicat_nom') as string).charAt(0).toUpperCase() + (row.getValue('syndicat_nom') as string).slice(1)
-    }
+      return (
+        (row.getValue("syndicat_nom") as string).charAt(0).toUpperCase() +
+        (row.getValue("syndicat_nom") as string).slice(1)
+      );
+    },
   },
   {
-    accessorKey: 'type',
-    header: 'Type',
+    accessorKey: "type",
+    header: "Type",
     cell: ({ row }) => {
       const color = {
-        POUR: 'success' as const,
-        CONTRE: 'error' as const,
-      }[row.getValue('type') as string]
+        POUR: "success" as const,
+        CONTRE: "error" as const,
+      }[row.getValue("type") as string];
 
-      return h(UBadge, { class: 'capitalize', variant: 'subtle', color }, () =>
-          row.getValue('type')
-      )
-    }
+      return h(UBadge, { class: "capitalize", variant: "subtle", color }, () =>
+        row.getValue("type"),
+      );
+    },
   },
   {
-    accessorKey: 'date',
-    header: 'Date',
+    accessorKey: "date",
+    header: "Date",
     cell: ({ row }) => {
-      return new Date(row.getValue('date')).toLocaleString('fr-FR') //todo faire affichage date
-    }
-  }
-]
-
+      return new Date(row.getValue("date")).toLocaleString("fr-FR"); //todo faire affichage date
+    },
+  },
+];
 </script>
 
 <template>
@@ -48,20 +50,30 @@ const columns: TableColumn<Choix>[] = [
     <template #header>
       <div class="flex justify-between items-center">
         {{ vote.nom }}
-        <UButton v-if="user.role === 'admin'" :disabled="vote.choix.length !== 0" icon="i-lucide-trash" color="error" variant="solid" @click.prevent="del(vote.id)"/>
+        <UButton
+          v-if="user.role === 'admin'"
+          :disabled="vote.choix.length !== 0"
+          icon="i-lucide-trash"
+          color="error"
+          variant="solid"
+          @click.prevent="del(vote.id)"
+        />
       </div>
     </template>
 
-    <UTable :data="vote.choix" class="flex-1 max-h-50" :columns :loading="vote.status === 'EN_VOTE'"/>
+    <UTable
+      :data="vote.choix"
+      class="flex-1 max-h-50"
+      :columns
+      :loading="vote.status === 'EN_VOTE'"
+    />
 
     <template #footer>
       <div class="flex justify-around items-center">
-        <slot/>
+        <slot />
       </div>
     </template>
   </UCard>
 </template>
 
-<style scoped>
-
-</style>
+<style scoped></style>

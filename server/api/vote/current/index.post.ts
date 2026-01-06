@@ -1,46 +1,48 @@
-import { z } from 'zod'
-import {TypeChoix} from "@prisma/client";
+import { z } from "zod";
+import { TypeChoix } from "@prisma/client";
 
 const userSchema = z.object({
-    type: z.nativeEnum(TypeChoix)
-})
+  type: z.nativeEnum(TypeChoix),
+});
 
 export default defineEventHandler(async (event) => {
-    const {type} = await readValidatedBody(event, body => userSchema.parse(body))
+  const { type } = await readValidatedBody(event, (body) =>
+    userSchema.parse(body),
+  );
 
-    const nom = <string>event.node.req.headers['ynh_user']
+  const nom = <string>event.node.req.headers["ynh_user"];
 
-    const syndicat = await prisma.syndicat.upsert({
-        where: {
-            nom
-        },
-        create: {
-            nom
-        },
-        update: {},
-    });
+  const syndicat = await prisma.syndicat.upsert({
+    where: {
+      nom,
+    },
+    create: {
+      nom,
+    },
+    update: {},
+  });
 
-    const vote = await enVote()
+  const vote = await enVote();
 
-    return prisma.choix.upsert({
-        where: {
-            syndicatId_voteId: {
-                syndicatId: syndicat.id,
-                voteId: vote.id
-            },
-        },
-        update: {
-            type: type,
-            date: new Date()
-        },
-        create: {
-            type: type,
-            syndicat: {
-                connect: syndicat
-            },
-            vote: {
-                connect: {id: vote?.id},
-            },
-        }
-    })
-})
+  return prisma.choix.upsert({
+    where: {
+      syndicatId_voteId: {
+        syndicatId: syndicat.id,
+        voteId: vote.id,
+      },
+    },
+    update: {
+      type: type,
+      date: new Date(),
+    },
+    create: {
+      type: type,
+      syndicat: {
+        connect: syndicat,
+      },
+      vote: {
+        connect: { id: vote?.id },
+      },
+    },
+  });
+});

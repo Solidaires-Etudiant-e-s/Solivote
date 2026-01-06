@@ -1,15 +1,12 @@
 export default defineEventHandler((_event) => {
-    return prisma.rencontre.findMany({
+  return prisma.rencontre.findMany({
+    include: {
+      mandats: {
         include: {
-            mandats: {
-                include: {
-                    syndicat: true,
-                }
-            }
+          syndicat: true,
         },
-        orderBy: [
-            {status: 'asc'},
-            {dateDebut: 'desc'},
-        ]
-    });
-})
+      },
+    },
+    orderBy: [{ status: "asc" }, { dateDebut: "desc" }],
+  });
+});
