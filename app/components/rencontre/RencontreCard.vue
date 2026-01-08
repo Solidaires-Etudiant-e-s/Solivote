@@ -95,7 +95,7 @@ const updateMandat = async (
         <UButton
           v-if="props.user?.role === 'admin'"
           :disabled="props.rencontre.mandats.length !== 0 || isDemareOrCloture"
-          icon="i-lucide-trash"
+          icon="mingcute:delete-line"
           color="error"
           variant="solid"
           @click.prevent="del(props.rencontre.id)"
@@ -131,7 +131,7 @@ const updateMandat = async (
       >
         <UButton
           color="error"
-          icon="i-lucide-trash"
+          icon="mingcute:delete-line"
           @click="delSyndicat(row.original!.syndicatId)"
         />
       </template>

@@ -84,7 +84,7 @@ const stop = async () => {
     >
       {{ props.currentVote.choix.length }}/??
       <UButton
-        icon="i-lucide-vote"
+        icon="mingcute:choice-line"
         color="info"
         variant="solid"
         @click.prevent="stop()"

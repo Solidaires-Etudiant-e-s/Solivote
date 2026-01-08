@@ -75,7 +75,7 @@ const columns: TableColumn<VoteChoice>[] = [
         <UButton
           v-if="props.user?.role === 'admin'"
           :disabled="props.vote.choix.length !== 0"
-          icon="i-lucide-trash"
+          icon="mingcute:delete-line"
           color="error"
           variant="solid"
           @click.prevent="del(props.vote.id)"

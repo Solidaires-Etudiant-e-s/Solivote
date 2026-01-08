@@ -151,7 +151,7 @@ const syndicat = ref([[]]);
                   color="neutral"
                   variant="link"
                   size="sm"
-                  icon="i-lucide-calendar"
+                  icon="mingcute:calendar-line"
                   aria-label="Select a date range"
                   class="px-0"
                 />
@@ -206,7 +206,7 @@ const syndicat = ref([[]]);
               </UFormField>
               <UButton
                 type="submit"
-                icon="i-lucide-square-plus"
+                icon="mingcute:add-square-line"
                 color="success"
                 variant="solid"
               />
@@ -214,7 +214,7 @@ const syndicat = ref([[]]);
 
             <UButton
               v-if="rencontre.status === StatusRencontre.INITIAL"
-              icon="i-lucide-rocket"
+              icon="mingcute:rocket-line"
               color="success"
               variant="solid"
               @click.prevent="launch(rencontre.id)"
@@ -223,7 +223,7 @@ const syndicat = ref([[]]);
             </UButton>
             <UButton
               v-if="rencontre.status === StatusRencontre.DEMARE"
-              icon="i-lucide-octagon-minus"
+              icon="mingcute:alert-octagon-line"
               color="error"
               variant="solid"
               @click.prevent="stop()"
@@ -232,7 +232,7 @@ const syndicat = ref([[]]);
             </UButton>
             <UButton
               v-if="rencontre.status === StatusRencontre.CLOTURE"
-              icon="i-lucide-rotate-ccw"
+              icon="mingcute:refresh-2-line"
               color="warning"
               variant="solid"
               @click.prevent="reinit(rencontre.id)"

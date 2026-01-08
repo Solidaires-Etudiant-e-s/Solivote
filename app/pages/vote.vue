@@ -93,7 +93,7 @@ const voter = async (type: TypeChoix) => {
           :execute="updateAll"
         >
           <UButton
-            icon="i-lucide-square-check"
+            icon="mingcute:checkbox-line"
             color="success"
             variant="solid"
             @click.prevent="voter(TypeChoix.POUR)"
@@ -101,7 +101,7 @@ const voter = async (type: TypeChoix) => {
             Pour
           </UButton>
           <UButton
-            icon="i-lucide-square-x"
+            icon="mingcute:close-square-line"
             color="error"
             variant="solid"
             @click.prevent="voter(TypeChoix.CONTRE)"
@@ -130,7 +130,7 @@ const voter = async (type: TypeChoix) => {
         >
           <UButton
             v-if="user!.role === 'admin'"
-            icon="i-lucide-rocket"
+            icon="mingcute:rocket-line"
             color="success"
             variant="solid"
             :disabled="!!currentVote"
