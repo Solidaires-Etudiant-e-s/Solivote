@@ -34,6 +34,25 @@
   --spacing: 0.2rem;
 }
 
+/* Dark mode tokens (apply via .dark) */
+.dark {
+  --ui-text-dimmed: var(--color-stone-400);
+  --ui-text-muted: var(--color-stone-300);
+  --ui-text-toned: var(--color-stone-400);
+  --ui-text: var(--color-stone-100);
+  --ui-text-highlighted: #ffffff;
+  --ui-text-inverted: var(--color-stone-900);
+  --ui-bg: var(--color-stone-950);
+  --ui-bg-muted: var(--color-stone-900);
+  --ui-bg-elevated: var(--color-stone-800);
+  --ui-bg-accented: var(--color-stone-800);
+  --ui-bg-inverted: #ffffff;
+  --ui-border: var(--color-stone-700);
+  --ui-border-muted: var(--color-stone-600);
+  --ui-border-accented: var(--color-stone-700);
+  --ui-border-inverted: var(--color-stone-200);
+}
+
 /* Custom Colors */
 :root {
   --color-solired-50: #fef2f2;
@@ -54,6 +73,10 @@ html, body {
   color: var(--ui-text);
   font-family: var(--font-sans, ui-sans-serif);
   scrollbar-color: var(--color-solired-500) var(--color-stone-100);
+}
+
+.dark {
+  scrollbar-color: var(--color-solired-500) var(--color-stone-900);
 }
 
 code, pre, kbd, samp {
