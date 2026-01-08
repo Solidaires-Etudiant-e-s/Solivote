@@ -41,17 +41,15 @@ onMounted(() => {
   open();
 });
 
-const updateAll = () => {
+const updateAll = async () => {
   send("vote");
-  updateVotes();
   send("current");
-  updateCurrent();
-  updateCurrentRencontre();
+  await Promise.all([updateVotes(), updateCurrent(), updateCurrentRencontre()]);
 };
 
 const launch = async (id: number) => {
   await $fetch(`/api/vote/start/${id}`);
-  updateAll();
+  await updateAll();
 };
 
 const voter = async (type: TypeChoix) => {
@@ -62,7 +60,7 @@ const voter = async (type: TypeChoix) => {
     },
   });
   send("current");
-  updateCurrent();
+  await updateCurrent();
 };
 </script>
 

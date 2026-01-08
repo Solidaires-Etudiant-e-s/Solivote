@@ -35,6 +35,7 @@
     "@iconify-json/lucide": "^1.2.82",
     "@iconify-json/simple-icons": "^1.2.65",
     "prisma": "^6.19.1",
+    "vite-plugin-eslint2": "^5.0.4",
     "vue-tsc": "^3.2.2"
   }
 }
