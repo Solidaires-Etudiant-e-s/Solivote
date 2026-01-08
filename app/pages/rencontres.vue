@@ -194,7 +194,7 @@ const syndicat = ref([[]]);
               @submit.prevent="onSyndicatAdd(index, rencontre.id)"
             >
               <UFormField
-                label="Syndicats à ajouté:"
+                label="Syndicats à ajouter:"
                 name="syndicats"
                 class="basis-80"
               >
@@ -219,7 +219,7 @@ const syndicat = ref([[]]);
               variant="solid"
               @click.prevent="launch(rencontre.id)"
             >
-              Démaré la rencontre
+              Démarrer la rencontre
             </UButton>
             <UButton
               v-if="rencontre.status === StatusRencontre.DEMARE"
@@ -228,7 +228,7 @@ const syndicat = ref([[]]);
               variant="solid"
               @click.prevent="stop()"
             >
-              Clorturé la rencontre
+              Clôturer la rencontre
             </UButton>
             <UButton
               v-if="rencontre.status === StatusRencontre.CLOTURE"
@@ -237,7 +237,7 @@ const syndicat = ref([[]]);
               variant="solid"
               @click.prevent="reinit(rencontre.id)"
             >
-              Reparamétré la rencontre
+              Réinitialiser la rencontre
             </UButton>
           </template>
         </rencontre-card>

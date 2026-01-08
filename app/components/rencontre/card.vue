@@ -23,7 +23,7 @@ const rencontreData = ref<Mandat[]>(rencontre.mandats);
 const columns: TableColumn<Mandat>[] = [
   {
     accessorKey: "syndicat.nom",
-    header: "Syndicats présent",
+    header: "Syndicats présents",
   },
   {
     accessorKey: "mandat",
