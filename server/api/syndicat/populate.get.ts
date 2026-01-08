@@ -19,5 +19,5 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  return $fetch("/api/syndicat");
+  return prisma.syndicat.findMany();
 });

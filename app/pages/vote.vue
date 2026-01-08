@@ -67,16 +67,16 @@ const voter = async (type: TypeChoix) => {
 </script>
 
 <template>
-  <list-creation>
+  <ListCreation>
     <template #header>
-      <app-header
+      <AppHeader
         v-if="currentRencontreStatus === 'success' && currentRencontre"
         :title="getRencontreName(currentRencontre)"
         :user="user"
         :status="userStatus"
         :ws-status="wsStatus"
       />
-      <app-header
+      <AppHeader
         v-else
         title="Votes"
         :user="user"
@@ -88,7 +88,7 @@ const voter = async (type: TypeChoix) => {
     <template #creation>
       <p v-if="userStatus !== 'success'">Loading...</p>
       <template v-else-if="user!.role === 'syndicat'">
-        <vote-card
+        <VoteCard
           v-if="currentVote"
           :vote="currentVote"
           :user="user"
@@ -110,9 +110,9 @@ const voter = async (type: TypeChoix) => {
           >
             Contre
           </UButton>
-        </vote-card>
+        </VoteCard>
       </template>
-      <vote-admin
+      <VoteAdmin
         v-else-if="user!.role === 'admin'"
         :execute="updateAll"
         :current-vote="currentVote"
@@ -123,7 +123,7 @@ const voter = async (type: TypeChoix) => {
 
     <template v-if="voteStatus === 'success' && userStatus === 'success'" #list>
       <template v-for="vote in votes" :key="vote.id">
-        <vote-card
+        <VoteCard
           v-if="vote.status !== 'EN_VOTE'"
           class="basis-100"
           :vote="vote"
@@ -140,10 +140,10 @@ const voter = async (type: TypeChoix) => {
           >
             Lancer le vote
           </UButton>
-        </vote-card>
+        </VoteCard>
       </template>
     </template>
-  </list-creation>
+  </ListCreation>
 </template>
 
 <style scoped></style>

@@ -19,8 +19,8 @@ export default defineEventHandler(async (event) => {
   );
 
   return await Promise.all(
-    data.syndicats.map(async (nom) => {
-      const syndicat = await prisma.syndicat.findUnique({ where: nom });
+    data.syndicats.map(async ({ nom }: { nom: string }) => {
+      const syndicat = await prisma.syndicat.findUnique({ where: { nom } });
       if (!syndicat) {
         throw new Error(`Syndicat ${nom} not found`);
       }

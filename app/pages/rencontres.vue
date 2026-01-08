@@ -117,9 +117,9 @@ const syndicat = ref([[]]);
 </script>
 
 <template>
-  <list-creation>
+  <ListCreation>
     <template #header>
-      <app-header
+      <AppHeader
         title="Rencontres"
         :user="user"
         :status="userStatus"
@@ -178,7 +178,7 @@ const syndicat = ref([[]]);
       #list
     >
       <template v-for="(rencontre, index) in rencontres" :key="rencontre.id">
-        <rencontre-card
+        <RencontreCard
           class="basis-150 shrink-0"
           :user="user"
           :rencontre
@@ -240,10 +240,10 @@ const syndicat = ref([[]]);
               Réinitialiser la rencontre
             </UButton>
           </template>
-        </rencontre-card>
+        </RencontreCard>
       </template>
     </template>
-  </list-creation>
+  </ListCreation>
 </template>
 
 <style scoped></style>

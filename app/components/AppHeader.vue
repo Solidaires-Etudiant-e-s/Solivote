@@ -1,5 +1,16 @@
 <script setup lang="ts">
-const props = defineProps(["title", "user", "status", "wsStatus"]);
+const props = defineProps<{
+  title: string;
+  user?: { name?: string; role: string } | null;
+  status?: string;
+  wsStatus?: string;
+}>();
+
+const displayName = computed(() => {
+  const name = props.user?.name?.trim();
+  if (!name) return "";
+  return name.charAt(0).toUpperCase() + name.slice(1);
+});
 </script>
 
 <template>
@@ -12,11 +23,9 @@ const props = defineProps(["title", "user", "status", "wsStatus"]);
       <UBadge v-if="props.wsStatus == 'OPEN'">Connecté</UBadge>
       <UBadge v-else color="error">Déconnecté</UBadge>
 
-      <ULink v-if="props.user">
+      <ULink v-if="props.user && displayName">
         <u-user
-          :name="
-            props.user.name.charAt(0).toUpperCase() + props.user.name.slice(1)
-          "
+          :name="displayName"
           :description="props.user.role"
         />
       </ULink>

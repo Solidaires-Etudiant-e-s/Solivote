@@ -15,10 +15,15 @@ export async function getSyndicats(event: H3Event): Promise<string[]> {
     });
   }
 
-  const [uid, password] = Buffer.from(
-    String(authHeader).split(" ")[1],
-    "base64",
-  )
+  const token = String(authHeader).split(" ")[1];
+  if (!token) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: "missing authorization token",
+    });
+  }
+
+  const [uid, password] = Buffer.from(token, "base64")
     .toString()
     .split(":");
 
@@ -38,9 +43,19 @@ export async function getSyndicats(event: H3Event): Promise<string[]> {
     });
 
     const entries = res.searchEntries ?? [];
+    const firstEntry = entries[0];
+    const members = (() => {
+      if (!firstEntry || typeof firstEntry !== "object") return [];
+      const value = (firstEntry as Record<string, unknown>).member;
+      if (Array.isArray(value)) {
+        return value.filter((item): item is string => typeof item === "string");
+      }
+      if (typeof value === "string") return [value];
+      return [];
+    })();
 
-    const syndicats = entries[0].member.map((dn) => {
-      const part = dn.split(",")[0]; // "uid=xxx"
+    const syndicats = members.map((dn) => {
+      const part = dn.split(",")[0] ?? ""; // "uid=xxx"
       return part.replace(/^uid=/i, ""); // remove "uid="
     });
 
@@ -48,7 +63,7 @@ export async function getSyndicats(event: H3Event): Promise<string[]> {
   } finally {
     try {
       await client.unbind();
-    } catch (_) {
+    } catch {
       /* ignore */
     }
   }

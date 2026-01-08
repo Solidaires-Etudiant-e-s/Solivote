@@ -24,5 +24,14 @@ export default defineNuxtConfig({
     "@nuxt/eslint",
     "@vueuse/nuxt",
   ],
+
   css: ["~/assets/css/main.css"],
+
+  typescript: {
+    strict: true,
+  },
+
+  eslint: {
+    checker: true,
+  }
 });
