@@ -3,22 +3,37 @@ import type { TableColumn } from "@nuxt/ui";
 import { type Mandat, StatusRencontre } from "@prisma/client";
 import getRencontreName from "~/utils/getRencontreName";
 
-const { rencontre, user, execute } = defineProps([
-  "rencontre",
-  "user",
-  "execute",
-]);
+type RencontreLike = {
+  id: number;
+  status: StatusRencontre;
+  mandats: Mandat[];
+  dateDebut: Date | string;
+  type: string;
+};
 
-const isDemareOrCloture = computed(() =>
-  [StatusRencontre.DEMARE, StatusRencontre.CLOTURE].includes(rencontre.status),
+const props = withDefaults(
+  defineProps<{
+    rencontre: RencontreLike;
+    user?: { role: string } | null;
+    execute: (self?: boolean) => Promise<void> | void;
+  }>(),
+  {
+    user: null,
+  },
+);
+
+const isDemareOrCloture = computed(
+  () =>
+    props.rencontre.status === StatusRencontre.DEMARE ||
+    props.rencontre.status === StatusRencontre.CLOTURE,
 );
 
 const del = async (id: number) => {
   await $fetch("/api/rencontre", { method: "delete", body: { id: id } });
-  await execute();
+  await props.execute();
 };
 
-const rencontreData = ref<Mandat[]>(rencontre.mandats);
+const rencontreData = ref<Mandat[]>(props.rencontre.mandats);
 
 const columns: TableColumn<Mandat>[] = [
   {
@@ -39,14 +54,14 @@ const delSyndicat = async (id: number) => {
   const result = await $fetch("/api/rencontre/syndicat", {
     method: "delete",
     body: {
-      id: rencontre.id,
+      id: props.rencontre.id,
       syndicatID: id,
     },
   });
 
   if (result) {
     toast.add({ title: "Success", color: "success" });
-    await execute();
+    await props.execute();
   }
 };
 
@@ -66,7 +81,7 @@ const updateMandat = async (
 
   if (result) {
     toast.add({ title: "Success", color: "success" });
-    await execute(false);
+    await props.execute(false);
   }
 };
 </script>
@@ -75,15 +90,15 @@ const updateMandat = async (
   <UCard>
     <template #header>
       <div class="flex justify-between items-center">
-        {{ getRencontreName(rencontre) }}
-        <UBadge>{{ rencontre.status }}</UBadge>
+        {{ getRencontreName(props.rencontre) }}
+        <UBadge>{{ props.rencontre.status }}</UBadge>
         <UButton
-          v-if="user.role === 'admin'"
-          :disabled="rencontre.mandats.length !== 0 || isDemareOrCloture"
-          icon="i-lucide-trash"
+          v-if="props.user?.role === 'admin'"
+          :disabled="props.rencontre.mandats.length !== 0 || isDemareOrCloture"
+          icon="mingcute:delete-line"
           color="error"
           variant="solid"
-          @click.prevent="del(rencontre.id)"
+          @click.prevent="del(props.rencontre.id)"
         />
       </div>
     </template>
@@ -92,10 +107,10 @@ const updateMandat = async (
       :data="rencontreData"
       class="flex-1 max-h-50"
       :columns
-      :loading="rencontre.status === 'DEMARE'"
+      :loading="props.rencontre.status === 'DEMARE'"
     >
       <template
-        v-if="user.role === 'admin' && !isDemareOrCloture"
+        v-if="props.user?.role === 'admin' && !isDemareOrCloture"
         #mandat-cell="{ row }"
       >
         <UInputNumber
@@ -111,12 +126,12 @@ const updateMandat = async (
         />
       </template>
       <template
-        v-if="user.role === 'admin' && !isDemareOrCloture"
+        v-if="props.user?.role === 'admin' && !isDemareOrCloture"
         #action-cell="{ row }"
       >
         <UButton
           color="error"
-          icon="i-lucide-trash"
+          icon="mingcute:delete-line"
           @click="delSyndicat(row.original!.syndicatId)"
         />
       </template>

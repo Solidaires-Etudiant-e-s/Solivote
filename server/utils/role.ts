@@ -15,10 +15,15 @@ export async function getUser(event: H3Event) {
     });
   }
 
-  const [uid, password] = Buffer.from(
-    String(authHeader).split(" ")[1],
-    "base64",
-  )
+  const token = String(authHeader).split(" ")[1];
+  if (!token) {
+    throw createError({
+      statusCode: 401,
+      statusMessage: "missing authorization token",
+    });
+  }
+
+  const [uid, password] = Buffer.from(token, "base64")
     .toString()
     .split(":");
 
@@ -47,10 +52,15 @@ export async function getUser(event: H3Event) {
       return false;
     };
 
-    if (entries.some((e) => matches((e as any).cn, "admins"))) {
+    const getCn = (entry: unknown): unknown => {
+      if (!entry || typeof entry !== "object") return undefined;
+      return (entry as Record<string, unknown>).cn;
+    };
+
+    if (entries.some((entry) => matches(getCn(entry), "admins"))) {
       return { name: uid, role: Groupe.ADMIN };
     }
-    if (entries.some((e) => matches((e as any).cn, "syndicats"))) {
+    if (entries.some((entry) => matches(getCn(entry), "syndicats"))) {
       return { name: uid, role: Groupe.SYNDICAT };
     }
 
@@ -58,7 +68,7 @@ export async function getUser(event: H3Event) {
   } finally {
     try {
       await client.unbind();
-    } catch (_) {
+    } catch {
       /* ignore */
     }
   }

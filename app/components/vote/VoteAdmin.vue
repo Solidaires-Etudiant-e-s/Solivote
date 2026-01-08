@@ -2,12 +2,33 @@
 import type { FormSubmitEvent } from "@nuxt/ui";
 import { z } from "zod";
 
-const { user, execute, currentVote, currentVoteStatus } = defineProps([
-  "user",
-  "execute",
-  "currentVote",
-  "currentVoteStatus",
-]);
+type VoteChoice = {
+  date: Date | string;
+  type: string;
+  syndicat?: { nom?: string } | null;
+  [key: string]: unknown;
+};
+
+type VoteLike = {
+  id: number;
+  nom: string;
+  status: string;
+  choix: VoteChoice[];
+};
+
+const props = withDefaults(
+  defineProps<{
+    user?: { name?: string; role: string } | null;
+    execute: () => Promise<void> | void;
+    currentVote?: VoteLike | null;
+    currentVoteStatus?: string | null;
+  }>(),
+  {
+    user: null,
+    currentVote: null,
+    currentVoteStatus: null,
+  },
+);
 
 const schema = z.object({
   nom: z.string().min(1),
@@ -28,7 +49,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (result) {
     toast.add({ title: "Success", description: result.nom, color: "success" });
     new_vote.nom = "";
-    await execute();
+    await props.execute();
   } else {
     toast.add({ title: "Error", description: "NOPE", color: "error" });
   }
@@ -36,7 +57,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
 const stop = async () => {
   await $fetch(`/api/vote/stop`);
-  await execute();
+  await props.execute();
 };
 </script>
 
@@ -55,22 +76,22 @@ const stop = async () => {
   </UForm>
 
   <div class="flex justify-center">
-    <vote-card
-      v-if="currentVoteStatus === 'success' && currentVote"
-      :vote="currentVote"
-      :user="user"
-      :execute="execute"
+    <VoteCard
+      v-if="props.currentVoteStatus === 'success' && props.currentVote"
+      :vote="props.currentVote"
+      :user="props.user"
+      :execute="props.execute"
     >
-      {{ currentVote.choix.length }}/??
+      {{ props.currentVote.choix.length }}/??
       <UButton
-        icon="i-lucide-vote"
+        icon="mingcute:choice-line"
         color="info"
         variant="solid"
         @click.prevent="stop()"
       >
         Clôturer le vote
       </UButton>
-    </vote-card>
+    </VoteCard>
   </div>
 </template>
 

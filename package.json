@@ -16,7 +16,8 @@
     "nuxt": "^4.2.2",
     "typescript": "^5.9.3",
     "vue": "^3.5.26",
-    "vue-router": "^4.6.4"
+    "vue-router": "^4.6.4",
+    "zod": "^4.3.5"
   },
   "private": true,
   "scripts": {
@@ -34,6 +35,8 @@
   "devDependencies": {
     "@iconify-json/lucide": "^1.2.82",
     "@iconify-json/simple-icons": "^1.2.65",
-    "prisma": "^7.2.0"
+    "prisma": "^7.2.0",
+    "vite-plugin-eslint2": "^5.0.4",
+    "vue-tsc": "^3.2.2"
   }
 }

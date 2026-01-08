@@ -41,17 +41,15 @@ onMounted(() => {
   open();
 });
 
-const updateAll = () => {
+const updateAll = async () => {
   send("vote");
-  updateVotes();
   send("current");
-  updateCurrent();
-  updateCurrentRencontre();
+  await Promise.all([updateVotes(), updateCurrent(), updateCurrentRencontre()]);
 };
 
 const launch = async (id: number) => {
   await $fetch(`/api/vote/start/${id}`);
-  updateAll();
+  await updateAll();
 };
 
 const voter = async (type: TypeChoix) => {
@@ -62,21 +60,21 @@ const voter = async (type: TypeChoix) => {
     },
   });
   send("current");
-  updateCurrent();
+  await updateCurrent();
 };
 </script>
 
 <template>
-  <list-creation>
+  <ListCreation>
     <template #header>
-      <app-header
+      <AppHeader
         v-if="currentRencontreStatus === 'success' && currentRencontre"
         :title="getRencontreName(currentRencontre)"
         :user="user"
         :status="userStatus"
         :ws-status="wsStatus"
       />
-      <app-header
+      <AppHeader
         v-else
         title="Votes"
         :user="user"
@@ -88,14 +86,14 @@ const voter = async (type: TypeChoix) => {
     <template #creation>
       <p v-if="userStatus !== 'success'">Loading...</p>
       <template v-else-if="user!.role === 'syndicat'">
-        <vote-card
+        <VoteCard
           v-if="currentVote"
           :vote="currentVote"
           :user="user"
           :execute="updateAll"
         >
           <UButton
-            icon="i-lucide-square-check"
+            icon="mingcute:checkbox-line"
             color="success"
             variant="solid"
             @click.prevent="voter(TypeChoix.POUR)"
@@ -103,16 +101,16 @@ const voter = async (type: TypeChoix) => {
             Pour
           </UButton>
           <UButton
-            icon="i-lucide-square-x"
+            icon="mingcute:close-square-line"
             color="error"
             variant="solid"
             @click.prevent="voter(TypeChoix.CONTRE)"
           >
             Contre
           </UButton>
-        </vote-card>
+        </VoteCard>
       </template>
-      <vote-admin
+      <VoteAdmin
         v-else-if="user!.role === 'admin'"
         :execute="updateAll"
         :current-vote="currentVote"
@@ -123,7 +121,7 @@ const voter = async (type: TypeChoix) => {
 
     <template v-if="voteStatus === 'success' && userStatus === 'success'" #list>
       <template v-for="vote in votes" :key="vote.id">
-        <vote-card
+        <VoteCard
           v-if="vote.status !== 'EN_VOTE'"
           class="basis-100"
           :vote="vote"
@@ -132,7 +130,7 @@ const voter = async (type: TypeChoix) => {
         >
           <UButton
             v-if="user!.role === 'admin'"
-            icon="i-lucide-rocket"
+            icon="mingcute:rocket-line"
             color="success"
             variant="solid"
             :disabled="!!currentVote"
@@ -140,10 +138,10 @@ const voter = async (type: TypeChoix) => {
           >
             Lancer le vote
           </UButton>
-        </vote-card>
+        </VoteCard>
       </template>
     </template>
-  </list-creation>
+  </ListCreation>
 </template>
 
 <style scoped></style>

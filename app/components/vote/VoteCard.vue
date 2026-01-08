@@ -1,16 +1,38 @@
 <script setup lang="ts">
 import type { TableColumn } from "#ui/components/Table.vue";
-import type { Choix } from "@prisma/client";
 import { UBadge } from "#components";
 
-const { vote, user, execute } = defineProps(["vote", "user", "execute"]);
+type VoteLike = {
+  id: number;
+  nom: string;
+  choix: VoteChoice[];
+  status: string;
+};
+
+type VoteChoice = {
+  date: Date | string;
+  type: string;
+  syndicat?: { nom?: string } | null;
+  [key: string]: unknown;
+};
+
+const props = withDefaults(
+  defineProps<{
+    vote: VoteLike;
+    user?: { role: string } | null;
+    execute: () => Promise<void> | void;
+  }>(),
+  {
+    user: null,
+  },
+);
 
 const del = async (id: number) => {
   await $fetch("/api/vote", { method: "delete", body: { id: id } });
-  await execute();
+  await props.execute();
 };
 
-const columns: TableColumn<Choix>[] = [
+const columns: TableColumn<VoteChoice>[] = [
   {
     accessorKey: "syndicat.nom",
     header: "Syndicat",
@@ -49,23 +71,23 @@ const columns: TableColumn<Choix>[] = [
   <UCard>
     <template #header>
       <div class="flex justify-between items-center">
-        {{ vote.nom }}
+        {{ props.vote.nom }}
         <UButton
-          v-if="user.role === 'admin'"
-          :disabled="vote.choix.length !== 0"
-          icon="i-lucide-trash"
+          v-if="props.user?.role === 'admin'"
+          :disabled="props.vote.choix.length !== 0"
+          icon="mingcute:delete-line"
           color="error"
           variant="solid"
-          @click.prevent="del(vote.id)"
+          @click.prevent="del(props.vote.id)"
         />
       </div>
     </template>
 
     <UTable
-      :data="vote.choix"
+      :data="props.vote.choix"
       class="flex-1 max-h-50"
       :columns
-      :loading="vote.status === 'EN_VOTE'"
+      :loading="props.vote.status === 'EN_VOTE'"
     />
 
     <template #footer>

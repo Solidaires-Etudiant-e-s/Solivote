@@ -5,22 +5,22 @@ import * as locales from "@nuxt/ui/locale";
 const items = ref<NavigationMenuItem[]>([
   {
     label: "Vote",
-    icon: "i-lucide-vote",
+    icon: "mingcute:choice-line",
     to: "/vote",
   },
   {
     label: "Rencontres",
-    icon: "i-lucide-calendar-range",
+    icon: "mingcute:calendar-3-line",
     to: "/rencontres",
   },
   {
     label: "Syndicats",
-    icon: "i-lucide-users",
+    icon: "mingcute:group-line",
     to: "/syndicats",
   },
   {
     label: "Aide",
-    icon: "i-lucide-circle-help",
+    icon: "mingcute:question-line",
     to: "/",
   },
 ]);
