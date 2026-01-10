@@ -26,15 +26,18 @@
     "generate": "nuxt generate",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "prisma:generate": "prisma generate",
+    "db:generate": "prisma generate",
     "db:migrate": "prisma migrate dev --name init",
     "db:deploy": "prisma migrate deploy",
-    "db:studio": "prisma studio"
+    "db:studio": "prisma studio",
+    "db:seed": "prisma db seed"
+  },
+  "prisma": {
+    "seed": "node prisma/seed.js"
   },
   "type": "module",
   "devDependencies": {
-    "@iconify-json/lucide": "^1.2.82",
-    "@iconify-json/simple-icons": "^1.2.65",
+    "@iconify-json/mingcute": "^1.2.6",
     "prisma": "^7.2.0",
     "vite-plugin-eslint2": "^5.0.4",
     "vue-tsc": "^3.2.2"
