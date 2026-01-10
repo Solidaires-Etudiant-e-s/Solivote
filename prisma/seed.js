@@ -27,13 +27,13 @@ async function main() {
 
   const syndicats = await prisma.syndicat.createMany({
     data: [
-      { nom: "SUD" },
-      { nom: "CGT" },
-      { nom: "CFDT" },
-      { nom: "FO" },
-      { nom: "UNSA" },
-      { nom: "CFTC" },
-      { nom: "CFE-CGC" },
+      { nom: "Bordeaux" },
+      { nom: "Rennes" },
+      { nom: "Nantes" },
+      { nom: "Lyon" },
+      { nom: "Paris" },
+      { nom: "Grenoble" },
+      { nom: "Marseille" },
     ],
   });
 
