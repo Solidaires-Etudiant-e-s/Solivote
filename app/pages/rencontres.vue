@@ -117,7 +117,7 @@ const syndicat = ref([[]]);
 </script>
 
 <template>
-  <ListCreation>
+  <NuxtLayout name="default">
     <template #header>
       <AppHeader
         title="Rencontres"
@@ -173,10 +173,7 @@ const syndicat = ref([[]]);
       </UForm>
     </template>
 
-    <template
-      v-if="rencontreStatus === 'success' && userStatus === 'success'"
-      #list
-    >
+    <template v-if="rencontreStatus === 'success' && userStatus === 'success'" #list>
       <template v-for="(rencontre, index) in rencontres" :key="rencontre.id">
         <RencontreCard
           class="basis-150 shrink-0"
@@ -243,7 +240,7 @@ const syndicat = ref([[]]);
         </RencontreCard>
       </template>
     </template>
-  </ListCreation>
+  </NuxtLayout>
 </template>
 
 <style scoped></style>

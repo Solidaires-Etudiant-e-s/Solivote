@@ -109,6 +109,18 @@ async function main() {
     "Conditions de travail",
     "Dialogue social",
   ];
+  const voteDescriptions = [
+    "Vote de principe sur la proposition présentée.",
+    "Décision sur l'adoption d'une mesure structurante.",
+    "Arbitrage sur la proposition soumise au vote.",
+    "Validation du cadre proposé pour la mise en œuvre.",
+    "Accord sur les modalités opérationnelles.",
+  ];
+  const voteContents = [
+    "Le bureau présente un projet détaillant les objectifs, le calendrier et l'impact attendu. Les syndicats sont invités à se prononcer sur l'adoption.",
+    "Le texte soumis précise les engagements attendus, les ressources mobilisées et les modalités de suivi. Un vote est requis pour acter la décision.",
+    "La proposition inclut une synthèse des échanges, les points de consensus et les points de désaccord. Le vote statue sur la suite à donner.",
+  ];
 
   const votes = [];
   for (let rIndex = 0; rIndex < rencontres.length; rIndex += 1) {
@@ -128,6 +140,9 @@ async function main() {
       const vote = await prisma.vote.create({
         data: {
           nom: `${topic} ${rencontre.dateDebut.getFullYear()}`,
+          description:
+            voteDescriptions[(rIndex + vIndex) % voteDescriptions.length],
+          content: voteContents[(vIndex + rIndex) % voteContents.length],
           rencontreId: rencontre.id,
           status,
         },
@@ -137,19 +152,20 @@ async function main() {
   }
 
   const choixData = [];
+  const tieVoteIndex = Math.floor(votes.length / 2);
   for (let vIndex = 0; vIndex < votes.length; vIndex += 1) {
     const vote = votes[vIndex];
     for (let sIndex = 0; sIndex < allSyndicats.length; sIndex += 1) {
       const syndicat = allSyndicats[sIndex];
-      const choiceIndex = (vIndex + sIndex) % 4;
-      const type =
-        choiceIndex === 0
-          ? TypeChoix.POUR
-          : choiceIndex === 1
-            ? TypeChoix.CONTRE
-            : choiceIndex === 2
-              ? TypeChoix.ABSTENTION
-              : TypeChoix.NPPV;
+      let type;
+
+      if (vIndex === tieVoteIndex) {
+        // Force a single tie between POUR and CONTRE.
+        type = sIndex % 2 === 0 ? TypeChoix.POUR : TypeChoix.CONTRE;
+      } else {
+        // Ensure a clear winner (POUR) by biasing the distribution.
+        type = sIndex < 4 ? TypeChoix.POUR : TypeChoix.CONTRE;
+      }
 
       choixData.push({
         syndicatId: syndicat.id,

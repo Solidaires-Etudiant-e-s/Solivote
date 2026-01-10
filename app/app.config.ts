@@ -4,10 +4,10 @@ export default defineAppConfig({
       primary: 'solired',
       secondary: 'stone',
       neutral: 'stone',
-      success: 'solired',
+      success: 'green',
       info: 'stone',
       warning: 'yellow',
-      error: 'red',
+      error: 'solired',
     },
     icons: {
       navHome: 'mingcute:home-2-line',

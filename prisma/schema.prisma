@@ -10,6 +10,8 @@ model Vote {
   id          Int        @id @default(autoincrement())
   date        DateTime   @default(now())
   nom         String
+  description String     @db.Text @default("")
+  content     String     @db.Text @default("")
   choix       Choix[]
   rencontre   Rencontre  @relation(fields: [rencontreId], references: [id])
   rencontreId Int

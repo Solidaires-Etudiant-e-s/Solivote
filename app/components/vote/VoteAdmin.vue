@@ -12,6 +12,8 @@ type VoteChoice = {
 type VoteLike = {
   id: number;
   nom: string;
+  description: string;
+  content: string;
   status: string;
   choix: VoteChoice[];
 };
@@ -32,12 +34,16 @@ const props = withDefaults(
 
 const schema = z.object({
   nom: z.string().min(1),
+  description: z.string().min(1),
+  content: z.string().min(1),
 });
 
 type Schema = z.output<typeof schema>;
 
 const new_vote = reactive({
   nom: "",
+  description: "",
+  content: "",
 });
 
 const toast = useToast();
@@ -49,6 +55,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (result) {
     toast.add({ title: "Success", description: result.nom, color: "success" });
     new_vote.nom = "";
+    new_vote.description = "";
+    new_vote.content = "";
     await props.execute();
   } else {
     toast.add({ title: "Error", description: "NOPE", color: "error" });
@@ -70,6 +78,12 @@ const stop = async () => {
   >
     <UFormField label="Nouveau vote:" name="nom" class="basis-80">
       <UInput v-model="new_vote.nom" class="w-full" />
+    </UFormField>
+    <UFormField label="Description:" name="description" class="basis-80">
+      <UTextarea v-model="new_vote.description" class="w-full" />
+    </UFormField>
+    <UFormField label="Contenu:" name="content" class="basis-80">
+      <UTextarea v-model="new_vote.content" class="w-full" />
     </UFormField>
 
     <UButton type="submit"> Créer </UButton>
