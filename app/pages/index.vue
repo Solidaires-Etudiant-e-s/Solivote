@@ -105,7 +105,8 @@ const runDelete = async () => {
 </script>
 
 <template>
-  <NuxtLayout>
+  <div>
+    <NuxtLayout>
     <AppHeader
       :title="
         currentRencontreStatus === 'success' && currentRencontre
@@ -203,30 +204,31 @@ const runDelete = async () => {
         <p v-else class="text-sm text-muted">Aucun vote terminé.</p>
       </div>
     </div>
-  </NuxtLayout>
+    </NuxtLayout>
 
-  <UModal v-model:open="showDeleteModal">
-    <template #content>
-      <UCard>
-        <template #header>
-          <div class="text-lg font-semibold">Supprimer le vote</div>
-        </template>
-        <p class="text-sm text-muted">
-          Confirmer la suppression de ce vote ?
-        </p>
-        <template #footer>
-          <div class="flex justify-end gap-3">
-            <UButton color="neutral" variant="ghost" @click="cancelDelete">
-              Annuler
-            </UButton>
-            <UButton color="primary" variant="soft" @click="runDelete">
-              Supprimer
-            </UButton>
-          </div>
-        </template>
-      </UCard>
-    </template>
-  </UModal>
+    <UModal v-model:open="showDeleteModal">
+      <template #content>
+        <UCard>
+          <template #header>
+            <div class="text-lg font-semibold">Supprimer le vote</div>
+          </template>
+          <p class="text-sm text-muted">
+            Confirmer la suppression de ce vote ?
+          </p>
+          <template #footer>
+            <div class="flex justify-end gap-3">
+              <UButton color="neutral" variant="ghost" @click="cancelDelete">
+                Annuler
+              </UButton>
+              <UButton color="primary" variant="soft" @click="runDelete">
+                Supprimer
+              </UButton>
+            </div>
+          </template>
+        </UCard>
+      </template>
+    </UModal>
 
-  <VoteCreateModal v-model:open="showNewVote" @created="updateAll" />
+    <VoteCreateModal v-model:open="showNewVote" @created="updateAll" />
+  </div>
 </template>
