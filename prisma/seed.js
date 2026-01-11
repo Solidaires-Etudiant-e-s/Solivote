@@ -18,6 +18,7 @@ const prisma = new PrismaClient({ adapter });
 async function main() {
   const now = new Date();
   const oneDayMs = 24 * 60 * 60 * 1000;
+  const monthFormatter = new Intl.DateTimeFormat("fr-FR", { month: "long" });
 
   await prisma.choix.deleteMany();
   await prisma.vote.deleteMany();
@@ -69,6 +70,7 @@ async function main() {
 
     const rencontre = await prisma.rencontre.create({
       data: {
+        nom: `${typeCycle[monthOffset % typeCycle.length]} de ${monthFormatter.format(monthStart)} ${monthStart.getFullYear()}`,
         dateDebut: monthStart,
         dateFin: monthEnd,
         type: typeCycle[monthOffset % typeCycle.length],
@@ -80,6 +82,9 @@ async function main() {
 
   const rencontreRunning = await prisma.rencontre.create({
     data: {
+      nom: `${TypeRencontre.CF} de ${monthFormatter.format(
+        new Date(now.getTime() - 3 * oneDayMs),
+      )} ${new Date(now.getTime() - 3 * oneDayMs).getFullYear()}`,
       dateDebut: new Date(now.getTime() - 3 * oneDayMs),
       dateFin: new Date(now.getTime() + 3 * oneDayMs),
       type: TypeRencontre.CF,
@@ -127,14 +132,18 @@ async function main() {
     const rencontre = rencontres[rIndex];
     const isClosed = rencontre.status === StatusRencontre.CLOTURE;
     const isCurrent = rencontre.status === StatusRencontre.DEMARE;
-    const votesPerRencontre = isCurrent ? 4 : 3;
+    const votesPerRencontre = isCurrent ? 5 : 3;
 
     for (let vIndex = 0; vIndex < votesPerRencontre; vIndex += 1) {
       const topic = voteTopics[(rIndex + vIndex) % voteTopics.length];
       const status = isClosed
         ? StatusVote.CLOTURE
-        : isCurrent && vIndex === 0
-          ? StatusVote.EN_VOTE
+        : isCurrent
+          ? vIndex === 0
+            ? StatusVote.EN_VOTE
+            : vIndex <= 2
+              ? StatusVote.INITAL
+              : StatusVote.CLOTURE
           : StatusVote.INITAL;
 
       const vote = await prisma.vote.create({
@@ -152,10 +161,18 @@ async function main() {
   }
 
   const choixData = [];
-  const tieVoteIndex = Math.floor(votes.length / 2);
-  for (let vIndex = 0; vIndex < votes.length; vIndex += 1) {
-    const vote = votes[vIndex];
-    for (let sIndex = 0; sIndex < allSyndicats.length; sIndex += 1) {
+  const votesWithChoices = votes.filter(
+    (vote) => vote.status !== StatusVote.INITAL,
+  );
+  const tieVoteIndex = Math.floor(votesWithChoices.length / 2);
+  for (let vIndex = 0; vIndex < votesWithChoices.length; vIndex += 1) {
+    const vote = votesWithChoices[vIndex];
+    const isInProgress = vote.status === StatusVote.EN_VOTE;
+    const maxChoices = isInProgress
+      ? Math.max(1, Math.floor(allSyndicats.length / 2))
+      : allSyndicats.length;
+
+    for (let sIndex = 0; sIndex < maxChoices; sIndex += 1) {
       const syndicat = allSyndicats[sIndex];
       let type;
 

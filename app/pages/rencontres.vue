@@ -1,7 +1,5 @@
 <script setup lang="ts">
-import { StatusRencontre, TypeRencontre } from "@prisma/client";
-import { today, getLocalTimeZone } from "@internationalized/date";
-import type { FormSubmitEvent } from "@nuxt/ui";
+import { StatusRencontre } from "@prisma/client";
 
 const {
   data: rencontres,
@@ -46,39 +44,7 @@ const updateAll = async (self: boolean = true) => {
   }
 };
 
-const new_rencontre = reactive({
-  type: TypeRencontre.CF,
-  dates: shallowRef({
-    start: today(getLocalTimeZone()),
-    end: today(getLocalTimeZone()).add({ days: 2 }),
-  }),
-});
-
 const toast = useToast();
-async function onSubmit(event: FormSubmitEvent<typeof new_rencontre>) {
-  console.log(typeof event.data.dates.start);
-  const result = await $fetch("/api/rencontre", {
-    method: "POST",
-    body: {
-      type: event.data.type,
-      dateDebut: event.data.dates.start.toDate(getLocalTimeZone()),
-      dateFin: event.data.dates.end.toDate(getLocalTimeZone()),
-    },
-    ignoreResponseError: true,
-  });
-
-  if (result) {
-    toast.add({
-      title: "Success",
-      description: result.dateDebut,
-      color: "success",
-    });
-    new_rencontre.type = TypeRencontre.CF;
-    await updateAll();
-  } else {
-    toast.add({ title: "Error", description: "NOPE", color: "error" });
-  }
-}
 
 async function onSyndicatAdd(index: number, id: number) {
   const result = await $fetch("/api/rencontre/syndicat", {
@@ -90,11 +56,19 @@ async function onSyndicatAdd(index: number, id: number) {
   });
 
   if (result) {
-    toast.add({ title: "Success", color: "success" });
+    toast.add({
+      title: "Syndicats ajoutés",
+      description: "Les syndicats ont été associés à la rencontre.",
+      color: "success",
+    });
     syndicat.value[index] = [];
     await updateAll();
   } else {
-    toast.add({ title: "Error", description: "NOPE", color: "error" });
+    toast.add({
+      title: "Ajout impossible",
+      description: "Veuillez vérifier la sélection et réessayer.",
+      color: "error",
+    });
   }
 }
 
@@ -118,62 +92,17 @@ const syndicat = ref([[]]);
 
 <template>
   <NuxtLayout name="default">
-    <template #header>
-      <AppHeader
-        title="Rencontres"
-        :user="user"
-        :status="userStatus"
-        :ws-status="wsStatus"
-      />
-    </template>
+    <AppHeader
+      title="Rencontres"
+      :user="user"
+      :status="userStatus"
+      :ws-status="wsStatus"
+    />
 
-    <template #creation>
-      <p v-if="userStatus !== 'success'">Loading...</p>
-      <UForm
-        v-else
-        :state="new_rencontre"
-        class="w-full flex flex-wrap gap-5 m-5 justify-center"
-        @submit.prevent="onSubmit"
-      >
-        <UFormField label="Nouvelle rencontre:" name="nom" class="basis-80">
-          <USelect
-            v-model="new_rencontre.type"
-            :items="Object.values(TypeRencontre)"
-            class="w-full"
-          />
-        </UFormField>
-
-        <UFormField label="Date:" name="dates" class="basis-80">
-          <UInputDate ref="inputDate" v-model="new_rencontre.dates" range>
-            <template #trailing>
-              <UPopover>
-                <UButton
-                  color="neutral"
-                  variant="link"
-                  size="sm"
-                  icon="mingcute:calendar-line"
-                  aria-label="Select a date range"
-                  class="px-0"
-                />
-
-                <template #content>
-                  <UCalendar
-                    v-model="new_rencontre.dates"
-                    class="p-2"
-                    :number-of-months="2"
-                    range
-                  />
-                </template>
-              </UPopover>
-            </template>
-          </UInputDate>
-        </UFormField>
-
-        <UButton type="submit"> Créer </UButton>
-      </UForm>
-    </template>
-
-    <template v-if="rencontreStatus === 'success' && userStatus === 'success'" #list>
+    <div
+      v-if="rencontreStatus === 'success' && userStatus === 'success'"
+      class="flex flex-wrap justify-center gap-2 pb-50 p-2"
+    >
       <template v-for="(rencontre, index) in rencontres" :key="rencontre.id">
         <RencontreCard
           class="basis-150 shrink-0"
@@ -239,7 +168,7 @@ const syndicat = ref([[]]);
           </template>
         </RencontreCard>
       </template>
-    </template>
+    </div>
   </NuxtLayout>
 </template>
 

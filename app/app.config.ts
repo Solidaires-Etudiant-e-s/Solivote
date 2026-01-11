@@ -4,7 +4,7 @@ export default defineAppConfig({
       primary: 'solired',
       secondary: 'stone',
       neutral: 'stone',
-      success: 'green',
+      success: 'solired',
       info: 'stone',
       warning: 'yellow',
       error: 'solired',

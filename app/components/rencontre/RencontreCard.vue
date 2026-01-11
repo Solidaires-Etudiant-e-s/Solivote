@@ -60,7 +60,11 @@ const delSyndicat = async (id: number) => {
   });
 
   if (result) {
-    toast.add({ title: "Success", color: "success" });
+    toast.add({
+      title: "Syndicat retiré",
+      description: "Le syndicat a été retiré de la rencontre.",
+      color: "success",
+    });
     await props.execute();
   }
 };
@@ -80,7 +84,11 @@ const updateMandat = async (
   });
 
   if (result) {
-    toast.add({ title: "Success", color: "success" });
+    toast.add({
+      title: "Mandat mis à jour",
+      description: "Le nombre de mandats a été enregistré.",
+      color: "success",
+    });
     await props.execute(false);
   }
 };

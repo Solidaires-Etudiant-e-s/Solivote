@@ -1,6 +1,13 @@
 <script setup lang="ts">
 import { UBadge } from "#components";
 
+type VoteChoice = {
+  date: Date | string;
+  type: string;
+  syndicat?: { nom?: string } | null;
+  [key: string]: unknown;
+};
+
 type VoteLike = {
   id: number;
   nom: string;
@@ -9,19 +16,10 @@ type VoteLike = {
   status: string;
 };
 
-type VoteChoice = {
-  date: Date | string;
-  type: string;
-  syndicat?: { nom?: string } | null;
-  [key: string]: unknown;
-};
-
 const props = withDefaults(
   defineProps<{
     vote: VoteLike;
     user?: { role: string; name?: string } | null;
-    featured?: boolean;
-    execute: () => Promise<void> | void;
   }>(),
   {
     user: null,
@@ -31,11 +29,6 @@ const props = withDefaults(
 const emit = defineEmits<{
   (event: "vote", type: string): void;
 }>();
-
-const del = async (id: number) => {
-  await $fetch("/api/vote", { method: "delete", body: { id: id } });
-  await props.execute();
-};
 
 const choiceGroups = computed(() => {
   const base = {
@@ -97,81 +90,31 @@ const userChoice = computed(() => {
   );
   return found?.type ?? null;
 });
-
-const winnerKeys = computed(() => {
-  let max = -1;
-  const keys: string[] = [];
-
-  for (const option of choiceMeta) {
-    const count = groupCount(option.key);
-    if (count > max) {
-      max = count;
-      keys.length = 0;
-      keys.push(option.key);
-    } else if (count === max && max > 0) {
-      keys.push(option.key);
-    }
-  }
-
-  return max > 0 ? keys : [];
-});
-
-const winnerLabel = computed(() => {
-  if (winnerKeys.value.length === 0) {
-    return "—";
-  }
-  return winnerKeys.value
-    .map((key) => choiceMeta.find((option) => option.key === key)?.label || key)
-    .join(" / ");
-});
-
-const winnerPercent = computed(() => {
-  if (winnerKeys.value.length === 0) {
-    return 0;
-  }
-  return Math.max(...winnerKeys.value.map((key) => groupPercent(key)));
-});
 </script>
 
 <template>
-  <UCard
-    :class="props.featured ? 'w-full h-max mt-4' : 'w-full'"
-  >
+  <UCard class="w-full h-max mt-4">
     <template #header>
       <div class="flex justify-between items-start">
         <div class="flex flex-col gap-1">
-          <div :class="props.featured ? 'text-xl' : 'text-base'" class="font-serif">
+          <div class="text-xl font-serif">
             {{ props.vote.nom }}
           </div>
-          <div
-            v-if="props.vote.description"
-            class="text-xs text-muted"
-          >
+          <div v-if="props.vote.description" class="text-xs text-muted">
             {{ props.vote.description }}
           </div>
         </div>
         <div class="flex items-center gap-2">
-          <UBadge
-            :label="props.featured ? 'En cours' : 'Clos'"
-            :color="props.featured ? 'primary' : 'secondary'"
-          >
-            <template v-if="props.featured" #leading>
+          <UBadge label="En cours..." color="primary">
+            <template #leading>
               <UIcon name="mingcute:loading-fill" class="animate-spin" />
             </template>
           </UBadge>
-          <UButton
-            v-if="props.user?.role === 'admin'"
-            :disabled="props.vote.choix.length !== 0"
-            icon="mingcute:delete-line"
-            color="error"
-            variant="solid"
-            @click.prevent="del(props.vote.id)"
-          />
         </div>
       </div>
     </template>
 
-    <div v-if="props.featured" class="flex flex-col gap-6">
+    <div class="flex flex-col gap-6">
       <div
         v-for="group in choiceMeta"
         :key="group.key"
@@ -186,59 +129,30 @@ const winnerPercent = computed(() => {
             />
             <span>{{ group.label }}</span>
           </label>
-          <div class="relative h-8 w-full rounded-sm bg-muted overflow-hidden">
+          <div class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden">
             <div
               class="h-full transition-[width] duration-500 ease-out"
               :class="
-                winnerKeys.includes(group.key)
-                  ? 'bg-primary'
-                  : 'bg-secondary'
+                groupPercent(group.key) > 0 ? 'bg-primary' : 'bg-secondary'
               "
               :style="{ width: `${groupPercent(group.key)}%` }"
-            ></div>
+            />
             <div
               class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
-              :class="groupPercent(group.key) === 0 ? 'text-[var(--ui-text-muted)]' : 'text-white'"
+              :class="groupPercent(group.key) === 0 ? 'text-muted' : 'text-white'"
             >
               {{ groupCount(group.key) }} ({{ groupPercent(group.key) }}%)
             </div>
           </div>
         </div>
-        <div class="text-xs text-[var(--ui-text-muted)]">
+        <div class="text-xs text-muted">
           {{ groupNames(group.key) || "—" }}
         </div>
       </div>
+      <div v-if="$slots.actions" class="flex items-center justify-between gap-3">
+        <slot name="actions" />
+      </div>
     </div>
-
-    <template v-else>
-      <div class="flex items-center gap-3">
-        <div class="w-28 shrink-0 text-sm font-semibold">
-          {{ winnerLabel }}
-        </div>
-        <div class="relative h-6 w-full rounded-sm bg-muted overflow-hidden">
-          <div
-            class="h-full transition-[width] duration-500 ease-out bg-primary"
-            :style="{ width: `${winnerPercent}%` }"
-          ></div>
-          <div class="absolute inset-0 flex items-center justify-start pl-2 text-[11px] font-semibold text-white">
-            {{ winnerPercent }}%
-          </div>
-        </div>
-      </div>
-
-      <div class="mt-3 flex flex-wrap gap-3 text-xs text-[var(--ui-text-muted)]">
-        <span
-          v-for="group in choiceMeta"
-          :key="group.key"
-          class="inline-flex items-center gap-1"
-        >
-          <span class="font-semibold">{{ group.label }}:</span>
-          <span>{{ groupCount(group.key) }} ({{ groupPercent(group.key) }}%)</span>
-        </span>
-      </div>
-    </template>
-
   </UCard>
 </template>
 
-<style scoped></style>

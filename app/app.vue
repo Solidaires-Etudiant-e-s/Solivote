@@ -1,9 +1,19 @@
 <script setup lang="ts">
 import type { NavigationMenuItem } from "@nuxt/ui";
 import * as locales from "@nuxt/ui/locale";
+import { TypeRencontre } from "@prisma/client";
+import { today, getLocalTimeZone } from "@internationalized/date";
 import getRencontreName from "~/utils/getRencontreName";
 
-const { data: currentRencontre } = await useLazyFetch("/api/rencontre/current");
+const { data: currentRencontre, execute: updateCurrentRencontre } =
+  await useLazyFetch("/api/rencontre/current");
+const { data: user } = await useLazyFetch("/api/role");
+
+const isSuperadmin = computed(
+  () =>
+    user.value?.role === "admin" &&
+    user.value?.name?.toLowerCase() === "superadmin",
+);
 
 const baseItems: NavigationMenuItem[] = [
   {
@@ -23,18 +33,76 @@ const items = computed<NavigationMenuItem[]>(() => {
       label: getRencontreName(currentRencontre.value),
       slot: "current-event",
       to: "/",
-      class:
-        "bg-[var(--color-solired-500)] text-[var(--ui-text-inverted)] font-semibold hover:bg-[var(--color-solired-600)]",
-      ui: {
-        link: "!text-[var(--ui-text-inverted)] hover:!text-[var(--ui-text-inverted)]",
-        linkLabel: "!text-[var(--ui-text-inverted)]",
-      },
     },
     ...baseItems,
   ];
 });
 
 const { locale } = useI18n();
+
+const showNewRencontre = ref(false);
+const newRencontre = reactive({
+  nom: "",
+  type: TypeRencontre.CF,
+  dates: shallowRef({
+    start: today(getLocalTimeZone()),
+    end: today(getLocalTimeZone()).add({ days: 2 }),
+  }),
+});
+const toast = useToast();
+
+const inferredRencontreName = computed(() => {
+  const start = newRencontre.dates.start?.toDate(getLocalTimeZone());
+  if (!start) return "";
+  const month = new Intl.DateTimeFormat("fr-FR", { month: "long" }).format(
+    start,
+  );
+  return `${newRencontre.type} de ${month} ${start.getFullYear()}`;
+});
+
+const displayRencontreName = computed(() =>
+  newRencontre.nom.trim() ? newRencontre.nom.trim() : inferredRencontreName.value,
+);
+
+const createRencontre = async () => {
+  const nom = displayRencontreName.value.trim();
+  if (!nom) {
+    toast.add({
+      title: "Nom manquant",
+      description: "Veuillez saisir un nom pour la rencontre.",
+      color: "error",
+    });
+    return;
+  }
+  const result = await $fetch("/api/rencontre", {
+    method: "POST",
+    body: {
+      nom,
+      type: newRencontre.type,
+      dateDebut: newRencontre.dates.start.toDate(getLocalTimeZone()),
+      dateFin: newRencontre.dates.end.toDate(getLocalTimeZone()),
+    },
+    ignoreResponseError: true,
+  });
+
+  if (result) {
+    toast.add({
+      title: "Rencontre créée",
+      description: result.nom || "La rencontre a été créée avec succès.",
+      color: "success",
+    });
+    newRencontre.nom = "";
+    newRencontre.type = TypeRencontre.CF;
+    showNewRencontre.value = false;
+    await updateCurrentRencontre();
+  } else {
+    toast.add({
+      title: "Création impossible",
+      description: "Une erreur est survenue. Réessayez.",
+      color: "error",
+    });
+  }
+};
 
 useHead({
   link: [
@@ -49,22 +117,104 @@ useHead({
   <UDashboardGroup>
     <UDashboardSidebar>
       <template #header>
-        <div class="pt-2 flex items-center justify-center">
+        <div class="flex items-center justify-center">
           <LogoItem class="h-10 w-auto" />
           <h1 class="ml-4 font-bold text-2xl">SoliVote</h1>
         </div>
       </template>
 
-      <UNavigationMenu :items="items" orientation="vertical">
-        <template #current-event-leading>
-          <span
-            class="mx-0.5 size-4 rounded-[40px] bg-[var(--ui-text-inverted)] animate-pulse"
-          />
-        </template>
-      </UNavigationMenu>
+      <template #default="{ collapsed }">
+        <UButton
+          v-if="isSuperadmin"
+          icon="mingcute:add-square-line"
+          color="primary"
+          variant="soft"
+          class="w-full"
+          :block="collapsed"
+          @click="showNewRencontre = true"
+        >
+          Nouvelle rencontre
+        </UButton>
+
+        <UNavigationMenu
+          :collapsed="collapsed"
+          :items="items"
+          orientation="vertical"
+        >
+          <template #current-event-leading>
+            <span
+              class="mx-0.5 size-4 rounded-[40px] bg-[var(--color-solired-500)] animate-pulse"
+            />
+          </template>
+        </UNavigationMenu>
+      </template>
+
     </UDashboardSidebar>
     <UApp :locale="locales[locale]">
-      <NuxtPage />
+      <div class="min-h-screen overflow-y-auto w-full">
+        <NuxtPage />
+      </div>
+      <UModal v-model:open="showNewRencontre">
+        <template #content>
+          <UCard>
+            <template #header>
+              <div class="text-lg font-semibold">Nouvelle rencontre</div>
+            </template>
+
+            <UForm
+              :state="newRencontre"
+              class="flex flex-col gap-4"
+              @submit.prevent="createRencontre"
+            >
+              <UFormField label="Nom" name="nom">
+                <UInput
+                  v-model="newRencontre.nom"
+                  :placeholder="inferredRencontreName || 'Nom de la rencontre'"
+                />
+              </UFormField>
+
+              <UFormField label="Type" name="type">
+                <USelect v-model="newRencontre.type" :items="Object.values(TypeRencontre)" />
+              </UFormField>
+
+              <UFormField label="Dates" name="dates">
+                <UInputDate v-model="newRencontre.dates" range>
+                  <template #trailing>
+                    <UPopover>
+                      <UButton
+                        color="neutral"
+                        variant="link"
+                        size="sm"
+                        icon="mingcute:calendar-line"
+                        aria-label="Select a date range"
+                        class="px-0"
+                      />
+
+                      <template #content>
+                        <UCalendar
+                          v-model="newRencontre.dates"
+                          class="p-2"
+                          :number-of-months="2"
+                          range
+                        />
+                      </template>
+                    </UPopover>
+                  </template>
+                </UInputDate>
+              </UFormField>
+
+              <div class="flex justify-end gap-3">
+                <UButton color="neutral" variant="ghost" @click="showNewRencontre = false">
+                  Annuler
+                </UButton>
+                <UButton type="submit" color="primary">
+                  Créer
+                </UButton>
+              </div>
+            </UForm>
+          </UCard>
+        </template>
+      </UModal>
     </UApp>
   </UDashboardGroup>
 </template>

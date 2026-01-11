@@ -49,6 +49,7 @@ model Mandat {
 
 model Rencontre {
   id        Int             @id @default(autoincrement())
+  nom       String          @default("")
   dateDebut DateTime
   dateFin   DateTime
   type      TypeRencontre
