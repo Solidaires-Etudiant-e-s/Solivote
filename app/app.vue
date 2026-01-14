@@ -8,6 +8,9 @@ import getRencontreName from "~/utils/getRencontreName";
 const { data: currentRencontre, execute: updateCurrentRencontre } =
   await useLazyFetch("/api/rencontre/current");
 const { data: user } = await useLazyFetch("/api/role");
+const { data: lasts, execute: _updateLastsRencontre } = await useLazyFetch(
+  "/api/rencontre/last",
+);
 
 const isSuperadmin = computed(
   () =>
@@ -23,19 +26,29 @@ const baseItems: NavigationMenuItem[] = [
   },
 ];
 
-const items = computed<NavigationMenuItem[]>(() => {
-  if (!currentRencontre.value) {
-    return baseItems;
+const items = computed<NavigationMenuItem[][]>(() => {
+  const final: NavigationMenuItem[][] = [];
+
+  if (currentRencontre.value) {
+    final.push([
+      {
+        label: getRencontreName(currentRencontre.value),
+        slot: "current-event",
+        to: "/",
+      },
+    ]);
   }
 
-  return [
-    {
-      label: getRencontreName(currentRencontre.value),
-      slot: "current-event",
-      to: "/",
-    },
-    ...baseItems,
-  ];
+  if (lasts.value) {
+    const lastRencontre: NavigationMenuItem[] = lasts.value.map((last) => ({
+      label: last.nom,
+    }));
+    final.push(lastRencontre);
+  }
+
+  final.push(baseItems);
+
+  return final;
 });
 
 const { locale } = useI18n();
@@ -61,7 +74,9 @@ const inferredRencontreName = computed(() => {
 });
 
 const displayRencontreName = computed(() =>
-  newRencontre.nom.trim() ? newRencontre.nom.trim() : inferredRencontreName.value,
+  newRencontre.nom.trim()
+    ? newRencontre.nom.trim()
+    : inferredRencontreName.value,
 );
 
 const createRencontre = async () => {
@@ -107,8 +122,17 @@ const createRencontre = async () => {
 useHead({
   link: [
     { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
-    { rel: "icon", type: "image/png", sizes: "32x32", href: "/favicon-32x32.png" },
-    { rel: "apple-touch-icon", sizes: "180x180", href: "/apple-touch-icon.png" },
+    {
+      rel: "icon",
+      type: "image/png",
+      sizes: "32x32",
+      href: "/favicon-32x32.png",
+    },
+    {
+      rel: "apple-touch-icon",
+      sizes: "180x180",
+      href: "/apple-touch-icon.png",
+    },
   ],
 });
 </script>
@@ -143,12 +167,11 @@ useHead({
         >
           <template #current-event-leading>
             <span
-              class="mx-0.5 size-4 rounded-[40px] bg-[var(--color-solired-500)] animate-pulse"
+              class="mx-0.5 size-4 rounded-[40px] bg-(--color-solired-500) animate-pulse"
             />
           </template>
         </UNavigationMenu>
       </template>
-
     </UDashboardSidebar>
     <UApp :locale="locales[locale]">
       <div class="min-h-screen overflow-y-auto w-full">
@@ -174,7 +197,10 @@ useHead({
               </UFormField>
 
               <UFormField label="Type" name="type">
-                <USelect v-model="newRencontre.type" :items="Object.values(TypeRencontre)" />
+                <USelect
+                  v-model="newRencontre.type"
+                  :items="Object.values(TypeRencontre)"
+                />
               </UFormField>
 
               <UFormField label="Dates" name="dates">
@@ -204,12 +230,14 @@ useHead({
               </UFormField>
 
               <div class="flex justify-end gap-3">
-                <UButton color="neutral" variant="ghost" @click="showNewRencontre = false">
+                <UButton
+                  color="neutral"
+                  variant="ghost"
+                  @click="showNewRencontre = false"
+                >
                   Annuler
                 </UButton>
-                <UButton type="submit" color="primary">
-                  Créer
-                </UButton>
+                <UButton type="submit" color="primary"> Créer </UButton>
               </div>
             </UForm>
           </UCard>
