@@ -12,11 +12,7 @@ const { data: lasts, execute: _updateLastsRencontre } = await useLazyFetch(
   "/api/rencontre/last",
 );
 
-const isSuperadmin = computed(
-  () =>
-    user.value?.role === "admin" &&
-    user.value?.name?.toLowerCase() === "superadmin",
-);
+const isSuperadmin = computed(() => user.value?.role === "admin");
 
 const baseItems: NavigationMenuItem[] = [
   {
