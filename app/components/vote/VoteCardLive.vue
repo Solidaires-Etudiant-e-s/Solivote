@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { UBadge } from "#components";
+import type { TypeVote } from "@prisma/client";
 
 type VoteChoice = {
   date: Date | string;
@@ -8,10 +9,17 @@ type VoteChoice = {
   [key: string]: unknown;
 };
 
+type Possibilite = {
+  id: number;
+  nom: string;
+};
+
 type VoteLike = {
   id: number;
   nom: string;
   description?: string;
+  type: TypeVote;
+  possibilites: Possibilite[];
   choix: VoteChoice[];
   status: string;
 };
@@ -47,7 +55,9 @@ const choiceGroups = computed(() => {
 
   for (const key of Object.keys(base) as Array<keyof typeof base>) {
     base[key].sort((a, b) =>
-      String(a.syndicat?.nom || "").localeCompare(String(b.syndicat?.nom || "")),
+      String(a.syndicat?.nom || "").localeCompare(
+        String(b.syndicat?.nom || ""),
+      ),
     );
   }
 
@@ -121,7 +131,9 @@ const userChoice = computed(() => {
         class="flex flex-col gap-2"
       >
         <div class="flex items-center gap-3">
-          <label class="w-28 shrink-0 flex items-center gap-2 text-sm font-semibold">
+          <label
+            class="w-28 shrink-0 flex items-center gap-2 text-sm font-semibold"
+          >
             <UCheckbox
               v-if="props.user?.role === 'syndicat'"
               :model-value="userChoice === group.key"
@@ -129,7 +141,9 @@ const userChoice = computed(() => {
             />
             <span>{{ group.label }}</span>
           </label>
-          <div class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden">
+          <div
+            class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden"
+          >
             <div
               class="h-full transition-[width] duration-500 ease-out"
               :class="
@@ -139,7 +153,9 @@ const userChoice = computed(() => {
             />
             <div
               class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
-              :class="groupPercent(group.key) === 0 ? 'text-muted' : 'text-white'"
+              :class="
+                groupPercent(group.key) === 0 ? 'text-muted' : 'text-white'
+              "
             >
               {{ groupCount(group.key) }} ({{ groupPercent(group.key) }}%)
             </div>
@@ -149,10 +165,12 @@ const userChoice = computed(() => {
           {{ groupNames(group.key) || "—" }}
         </div>
       </div>
-      <div v-if="$slots.actions" class="flex items-center justify-between gap-3">
+      <div
+        v-if="$slots.actions"
+        class="flex items-center justify-between gap-3"
+      >
         <slot name="actions" />
       </div>
     </div>
   </UCard>
 </template>
-

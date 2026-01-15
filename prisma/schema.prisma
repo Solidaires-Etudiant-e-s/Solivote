@@ -7,34 +7,43 @@ datasource db {
 }
 
 model Vote {
-  id          Int        @id @default(autoincrement())
-  date        DateTime   @default(now())
-  nom         String
-  description String     @db.Text
-  content     String     @db.Text
-  choix       Choix[]
-  rencontre   Rencontre  @relation(fields: [rencontreId], references: [id])
-  rencontreId Int
-  status      StatusVote @default(INITAL)
+  id           Int           @id @default(autoincrement())
+  date         DateTime      @default(now())
+  nom          String
+  type         TypeVote
+  description  String?       @db.Text
+  choix        Choix[]
+  possibilites Possibilite[]
+  rencontre    Rencontre     @relation(fields: [rencontreId], references: [id])
+  rencontreId  Int
+  status       StatusVote    @default(INITAL)
+}
+
+model Possibilite {
+  id     Int    @id @default(autoincrement())
+  nom    String
+  vote   Vote   @relation(fields: [voteId], references: [id], onDelete: Cascade)
+  voteId Int
 }
 
 model Choix {
-  id         Int       @id @default(autoincrement())
-  date       DateTime  @default(now())
-  type       TypeChoix
-  syndicat   Syndicat  @relation(fields: [syndicatId], references: [id])
+  id         Int      @id @default(autoincrement())
+  date       DateTime @default(now())
+  syndicat   Syndicat @relation(fields: [syndicatId], references: [id])
   syndicatId Int
-  vote       Vote      @relation(fields: [voteId], references: [id])
+  vote       Vote     @relation(fields: [voteId], references: [id])
   voteId     Int
+
+  choix Json
 
   @@unique([syndicatId, voteId])
 }
 
 model Syndicat {
-  id      Int      @id @default(autoincrement())
-  nom     String   @unique
-  mandats Mandat[] @relation()
-  choix   Choix[]
+  id            Int      @id @default(autoincrement())
+  nom           String   @unique
+  mandats       Mandat[] @relation()
+  choixStandard Choix[]
 }
 
 model Mandat {
@@ -82,4 +91,10 @@ enum StatusRencontre {
   INITIAL
   DEMARE
   CLOTURE
+}
+
+enum TypeVote {
+  STANDARD
+  EN_CONTRE
+  CONDORCET
 }

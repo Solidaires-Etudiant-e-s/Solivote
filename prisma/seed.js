@@ -4,6 +4,7 @@ import {
   StatusVote,
   TypeChoix,
   TypeRencontre,
+  TypeVote,
 } from "@prisma/client";
 import { PrismaMariaDb } from "@prisma/adapter-mariadb";
 
@@ -149,9 +150,9 @@ async function main() {
       const vote = await prisma.vote.create({
         data: {
           nom: `${topic} ${rencontre.dateDebut.getFullYear()}`,
+          type: TypeVote.STANDARD,
           description:
             voteDescriptions[(rIndex + vIndex) % voteDescriptions.length],
-          content: voteContents[(vIndex + rIndex) % voteContents.length],
           rencontreId: rencontre.id,
           status,
         },
@@ -187,7 +188,7 @@ async function main() {
       choixData.push({
         syndicatId: syndicat.id,
         voteId: vote.id,
-        type,
+        choix: type,
       });
     }
   }

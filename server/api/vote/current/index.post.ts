@@ -2,7 +2,7 @@ import { z } from "zod";
 import { TypeChoix } from "@prisma/client";
 
 const userSchema = z.object({
-  type: z.nativeEnum(TypeChoix),
+  type: z.enum(TypeChoix),
 });
 
 export default defineEventHandler(async (event) => {
@@ -32,11 +32,11 @@ export default defineEventHandler(async (event) => {
       },
     },
     update: {
-      type: type,
+      choix: type,
       date: new Date(),
     },
     create: {
-      type: type,
+      choix: type,
       syndicat: {
         connect: syndicat,
       },

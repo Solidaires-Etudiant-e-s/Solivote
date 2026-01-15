@@ -1,10 +1,18 @@
+import { TypeVote } from "@prisma/client";
 import { z } from "zod";
 
-const userSchema = z.object({
-  nom: z.string().min(1),
-  description: z.string().min(1),
-  content: z.string().min(1),
-});
+const userSchema = z
+  .object({
+    nom: z.string().min(1),
+    description: z.string().nullable(),
+    possibilites: z.array(z.string().min(1)),
+    type: z.enum(TypeVote),
+  })
+  .refine((input) => {
+    if (input.type != TypeVote.CONDORCET) return true;
+    if (input.possibilites.length == 0) return false;
+    return true;
+  });
 
 export default defineEventHandler(async (event) => {
   const data = await readValidatedBody(event, (body) => userSchema.parse(body));
@@ -22,7 +30,12 @@ export default defineEventHandler(async (event) => {
     data: {
       nom: data.nom,
       description: data.description,
-      content: data.content,
+      type: data.type,
+      possibilites: {
+        createMany: {
+          data: data.possibilites.map((x) => ({ nom: x })),
+        },
+      },
       rencontre: {
         connect: current,
       },

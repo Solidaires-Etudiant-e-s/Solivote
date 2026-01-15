@@ -1,7 +1,9 @@
 <script setup lang="ts">
+import type { TypeVote, TypeChoix } from "@prisma/client";
+
 type VoteChoice = {
   date: Date | string;
-  type: string;
+  choix: TypeChoix;
   syndicat?: { nom?: string } | null;
   [key: string]: unknown;
 };
@@ -9,6 +11,7 @@ type VoteChoice = {
 type VoteLike = {
   id: number;
   nom: string;
+  type: TypeVote;
   description?: string;
   choix: VoteChoice[];
   status: string;
@@ -27,7 +30,7 @@ const choiceGroups = computed(() => {
   };
 
   for (const choix of props.vote.choix || []) {
-    const key = choix.type as keyof typeof base;
+    const key = choix.choix;
     if (key in base) {
       base[key].push(choix);
     }
@@ -45,10 +48,9 @@ const choiceMeta = [
 
 const totalVotes = computed(() => props.vote.choix?.length || 0);
 
-const groupCount = (key: string) =>
-  choiceGroups.value[key as keyof typeof choiceGroups.value]?.length || 0;
+const groupCount = (key: TypeChoix) => choiceGroups.value[key]?.length || 0;
 
-const groupPercent = (key: string) => {
+const groupPercent = (key: TypeChoix) => {
   const total = totalVotes.value;
   if (total === 0) {
     return 0;
@@ -58,7 +60,7 @@ const groupPercent = (key: string) => {
 
 const winnerKeys = computed(() => {
   let max = -1;
-  const keys: string[] = [];
+  const keys: TypeChoix[] = [];
 
   for (const option of choiceMeta) {
     const count = groupCount(option.key);
@@ -110,12 +112,16 @@ const winnerPercent = computed(() => {
       <div class="w-28 shrink-0 text-sm font-semibold">
         {{ winnerLabel }}
       </div>
-      <div class="relative h-6 w-full rounded-sm bg-secondary-200 overflow-hidden">
+      <div
+        class="relative h-6 w-full rounded-sm bg-secondary-200 overflow-hidden"
+      >
         <div
           class="h-full transition-[width] duration-500 ease-out bg-primary"
           :style="{ width: `${winnerPercent}%` }"
         />
-        <div class="absolute inset-0 flex items-center justify-start pl-2 text-[11px] font-semibold text-white">
+        <div
+          class="absolute inset-0 flex items-center justify-start pl-2 text-[11px] font-semibold text-white"
+        >
           {{ winnerPercent }}%
         </div>
       </div>
@@ -128,7 +134,9 @@ const winnerPercent = computed(() => {
         class="inline-flex items-center gap-1"
       >
         <span class="font-semibold">{{ group.label }}:</span>
-        <span>{{ groupCount(group.key) }} ({{ groupPercent(group.key) }}%)</span>
+        <span
+          >{{ groupCount(group.key) }} ({{ groupPercent(group.key) }}%)</span
+        >
       </span>
     </div>
 
@@ -137,4 +145,3 @@ const winnerPercent = computed(() => {
     </div>
   </UCard>
 </template>
-

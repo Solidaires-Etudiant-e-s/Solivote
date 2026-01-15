@@ -2,7 +2,11 @@
 import type { Vote } from "@prisma/client";
 
 type VoteLike = Pick<Vote, "id" | "nom" | "description" | "status"> & {
-  choix: { date: Date | string; type: string; syndicat?: { nom?: string } | null }[];
+  choix: {
+    date: Date | string;
+    type: string;
+    syndicat?: { nom?: string } | null;
+  }[];
 };
 
 const props = defineProps<{
@@ -34,10 +38,14 @@ const stop = async () => {
           color="primary"
           @click.prevent="stop()"
         >
-          Clôturer ({{ syndicatCount - props.currentVote.choix.length }} restant{{ syndicatCount - props.currentVote.choix.length === 1 ? '' : 's' }})
+          Clôturer ({{
+            syndicatCount - props.currentVote.choix.length
+          }}
+          restant{{
+            syndicatCount - props.currentVote.choix.length === 1 ? "" : "s"
+          }})
         </UButton>
       </template>
     </VoteCardLive>
   </div>
 </template>
-
