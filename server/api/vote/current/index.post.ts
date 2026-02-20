@@ -1,5 +1,5 @@
 import { z } from "zod";
-import { TypeChoix } from "@prisma/client";
+import { StatusVote, TypeChoix } from "@prisma/client";
 
 const userSchema = z.object({
   type: z.enum(TypeChoix),
@@ -12,17 +12,24 @@ export default defineEventHandler(async (event) => {
 
   const nom = <string>event.node.req.headers["ynh_user"];
 
-  const syndicat = await prisma.syndicat.upsert({
+  const syndicat = await prisma.syndicat.findFirstOrThrow({
     where: {
       nom,
     },
-    create: {
-      nom,
-    },
-    update: {},
   });
 
-  const vote = await enVote();
+  const vote = await prisma.vote.findFirstOrThrow({
+    where: {
+      status: StatusVote.EN_VOTE,
+      rencontre: {
+        mandats: {
+          some: {
+            syndicatId: syndicat.id,
+          },
+        },
+      },
+    },
+  });
 
   return prisma.choix.upsert({
     where: {
