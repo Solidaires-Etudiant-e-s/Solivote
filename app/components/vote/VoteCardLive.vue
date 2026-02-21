@@ -1,13 +1,7 @@
 <script setup lang="ts">
 import { UBadge } from "#components";
-import type { TypeVote } from "@prisma/client";
+import { TypeVote, type Choix, type Syndicat } from "@prisma/client";
 import type { JsonArray } from "@prisma/client/runtime/client";
-
-type VoteChoice = {
-    choix: unknown;
-    syndicat?: { nom?: string } | null;
-    [key: string]: unknown;
-};
 
 type Possibilite = {
     id: number;
@@ -20,7 +14,7 @@ type VoteLike = {
     description?: string;
     type: TypeVote;
     possibilites: Possibilite[];
-    choix: VoteChoice[];
+    choix: Choix[];
     status: string;
 };
 
@@ -36,59 +30,60 @@ const props = withDefaults(
 
 const emit = defineEmits<{
     (event: "vote", type: string): void;
+    (event: "panacher", values: Panache): void;
 }>();
 
 const choiceGroups = computed(() => {
-    const base = {
-        POUR: [] as VoteChoice[],
-        CONTRE: [] as VoteChoice[],
-        ABSTENTION: [] as VoteChoice[],
-        NPPV: [] as VoteChoice[],
-    };
+    const base: Record<
+        string,
+        Array<{ syndicat: Syndicat; mandat: number }>
+    > = {};
 
-    for (const choix of props.vote.choix || []) {
-        const c = choix.choix as JsonArray;
-        for (const k in c) {
-            base[k as keyof typeof base].push(c[k]);
+    for (const i of props.vote.choix) {
+        for (const y of i.choix as JsonArray) {
+            if (!base[y!.type]) {
+                base[y!.type] = [];
+            }
+            base[y!.type]!.push({ syndicat: i.syndicat, mandat: y!.mandat });
         }
-    }
-
-    for (const key of Object.keys(base) as Array<keyof typeof base>) {
-        base[key].sort((a, b) =>
-            String(a.syndicat?.nom || "").localeCompare(
-                String(b.syndicat?.nom || ""),
-            ),
-        );
     }
 
     return base;
 });
 
-const choiceMeta = [
-    { key: "POUR", label: "Pour" },
-    { key: "CONTRE", label: "Contre" },
-    { key: "ABSTENTION", label: "Abstention" },
-    { key: "NPPV", label: "NPPV" },
-];
-
-const totalVotes = computed(() => props.vote.choix?.length || 0);
-
-const groupCount = (key: string) =>
-    choiceGroups.value[key as keyof typeof choiceGroups.value]?.length || 0;
-
-const groupPercent = (key: string) => {
-    const total = totalVotes.value;
-    if (total === 0) {
-        return 0;
+const choiceMeta = computed(() => {
+    const base = [];
+    if (props.vote.type === TypeVote.STANDARD) {
+        base.push({ key: "POUR", label: "Pour" });
+        base.push({ key: "CONTRE", label: "Contre" });
+        base.push({ key: "ABSTENTION", label: "Abstention" });
+        base.push({ key: "NPPV", label: "NPPV" });
+    } else if (props.vote.type === TypeVote.EN_CONTRE) {
+        base.push({ key: "POUR", label: "Pour" });
+        base.push({ key: "CONTRE", label: "Contre" });
+    } else {
+        for (const i of props.vote.possibilites) {
+            base.push({ key: i.id, label: i.nom });
+        }
     }
-    return Math.round((groupCount(key) / total) * 100);
-};
+    return base;
+});
 
-const groupNames = (key: string) =>
-    choiceGroups.value[key as keyof typeof choiceGroups.value]
-        ?.map((choice) => choice.syndicat?.nom)
-        .filter(Boolean)
-        .join(", ");
+type Panache = Record<string, number>;
+
+const en_panachage = ref(false);
+const panachage = ref({} as Panache);
+
+const totalVotes = computed(() => {
+    let total = 0;
+    for (const i of props.vote.choix) {
+        for (const y of i.choix as JsonArray) {
+            total += y!.mandat;
+        }
+    }
+
+    return total;
+});
 
 const userChoice = computed(() => {
     const userName = props.user?.name?.toLowerCase();
@@ -96,7 +91,7 @@ const userChoice = computed(() => {
         return null;
     }
     const found = props.vote.choix.find(
-        (choice) => choice.syndicat?.nom?.toLowerCase() === userName,
+        (choice) => choice.syndicat.nom?.toLowerCase() === userName,
     );
     return found?.type ?? null;
 });
@@ -118,6 +113,7 @@ const userChoice = computed(() => {
                     </div>
                 </div>
                 <div class="flex items-center gap-2">
+                    <UBadge>{{ props.vote.type }}</UBadge>
                     <UBadge label="En cours..." color="primary">
                         <template #leading>
                             <UIcon
@@ -132,6 +128,13 @@ const userChoice = computed(() => {
 
         <div class="flex flex-col gap-6">
             <div
+                v-if="props.user?.role === 'syndicat'"
+                class="flex items-center gap-x-4"
+            >
+                <span>Panachage</span>
+                <USwitch v-model="en_panachage" />
+            </div>
+            <div
                 v-for="group in choiceMeta"
                 :key="group.key"
                 class="flex flex-col gap-2"
@@ -140,13 +143,19 @@ const userChoice = computed(() => {
                     <label
                         class="w-28 shrink-0 flex items-center gap-2 text-sm font-semibold"
                     >
-                        <UCheckbox
-                            v-if="props.user?.role === 'syndicat'"
-                            :model-value="userChoice === group.key"
-                            @update:model-value="
-                                (val) => val && emit('vote', group.key)
-                            "
-                        />
+                        <template v-if="props.user?.role === 'syndicat'">
+                            <UCheckbox
+                                v-if="!en_panachage"
+                                :model-value="userChoice === group.key"
+                                @update:model-value="
+                                    (val) => val && emit('vote', group.key)
+                                "
+                            />
+                            <template v-else>
+                                <UInputNumber v-model="panachage[group.key]" />
+                                {{ panachage[group.key] }}
+                            </template>
+                        </template>
                         <span>{{ group.label }}</span>
                     </label>
                     <div
@@ -155,28 +164,42 @@ const userChoice = computed(() => {
                         <div
                             class="h-full transition-[width] duration-500 ease-out"
                             :class="
-                                groupPercent(group.key) > 0
+                                groupPercent(
+                                    group.key,
+                                    totalVotes,
+                                    choiceGroups,
+                                ) > 0
                                     ? 'bg-primary'
                                     : 'bg-secondary'
                             "
-                            :style="{ width: `${groupPercent(group.key)}%` }"
+                            :style="{
+                                width: `${groupPercent(group.key, totalVotes, choiceGroups)}%`,
+                            }"
                         />
                         <div
                             class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
                             :class="
-                                groupPercent(group.key) === 0
+                                groupPercent(
+                                    group.key,
+                                    totalVotes,
+                                    choiceGroups,
+                                ) === 0
                                     ? 'text-muted'
                                     : 'text-white'
                             "
                         >
-                            {{ groupCount(group.key) }} ({{
-                                groupPercent(group.key)
+                            {{ groupCount(group.key, choiceGroups) }} ({{
+                                groupPercent(
+                                    group.key,
+                                    totalVotes,
+                                    choiceGroups,
+                                )
                             }}%)
                         </div>
                     </div>
                 </div>
                 <div class="text-xs text-muted">
-                    {{ groupNames(group.key) || "—" }}
+                    {{ groupNames(group.key, choiceGroups) || "—" }}
                 </div>
             </div>
             <div
@@ -185,6 +208,9 @@ const userChoice = computed(() => {
             >
                 <slot name="actions" />
             </div>
+            <UButton v-if="en_panachage" @click="emit('panacher', panachage)">
+                Panacher !
+            </UButton>
         </div>
     </UCard>
 </template>

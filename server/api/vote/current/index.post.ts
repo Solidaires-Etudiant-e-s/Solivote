@@ -1,7 +1,12 @@
 import { z } from "zod";
 import { StatusVote, TypeChoix } from "@prisma/client";
 
-const userSchema = z.partialRecord(z.enum(TypeChoix), z.int().min(1));
+const userSchema = z.array(
+    z.object({
+        type: z.enum(TypeChoix).or(z.number().min(0)),
+        mandat: z.int().min(0),
+    }),
+);
 
 export default defineEventHandler(async (event) => {
     const choix = await readValidatedBody(event, (body) =>
@@ -14,9 +19,17 @@ export default defineEventHandler(async (event) => {
         throw new Error(`Current syndicat not found`);
     }
 
+    const en_vote = await enVote();
+
     let total_mandats = 0;
-    for (const i in choix) {
-        total_mandats += choix[i];
+    for (const i of choix) {
+        total_mandats += i.mandat;
+
+        if (typeof i === "number") {
+            if (!en_vote.possibilites.some((e) => e.id === i)) {
+                throw new Error(`choix invalid`);
+            }
+        }
     }
 
     if (total_mandats !== syndicat.mandats[0].mandat) {

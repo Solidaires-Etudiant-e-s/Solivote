@@ -1,5 +1,8 @@
 <script setup lang="ts">
 import type { TypeChoix } from "@prisma/client";
+import type { JsonArray } from "@prisma/client/runtime/client";
+
+type Panache = Record<string, number>;
 
 const {
     data: votes,
@@ -70,9 +73,25 @@ const launch = async (id: number) => {
 };
 
 const voter = async (type: TypeChoix) => {
-    const body: Record<TypeChoix, number> = {} as Record<TypeChoix, number>;
+    console.log(type);
+    const body = [] as JsonArray;
 
-    body[type] = syndicat.value!.mandats[0]!.mandat;
+    body.push({ type: type, mandat: syndicat.value!.mandats[0]!.mandat });
+
+    await $fetch(`/api/vote/current`, {
+        method: "POST",
+        body,
+    });
+    send("current");
+    await updateCurrent();
+};
+
+const panacher = async (panache: Panache) => {
+    const body = [] as JsonArray;
+
+    for (const type in panache) {
+        body.push({ type: type, mandat: panache[type] });
+    }
 
     await $fetch(`/api/vote/current`, {
         method: "POST",
@@ -145,6 +164,7 @@ const runDelete = async () => {
                         :vote="currentVote"
                         :user="user"
                         @vote="(type) => voter(type as TypeChoix)"
+                        @panacher="(panache) => panacher(panache as Panache)"
                     />
                 </template>
                 <VoteCurrentAdmin

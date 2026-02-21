@@ -40,10 +40,10 @@ const props = defineProps<{
                         class="flex space-x-4 flex-wrap"
                     >
                         <template
-                            v-for="test in props.vote.possibilites"
-                            :key="test.id"
+                            v-for="possibilite in props.vote.possibilites"
+                            :key="possibilite.id"
                         >
-                            <UBadge>{{ test.nom }}</UBadge>
+                            <UBadge>{{ possibilite.nom }}</UBadge>
                         </template>
                     </div>
                 </div>
