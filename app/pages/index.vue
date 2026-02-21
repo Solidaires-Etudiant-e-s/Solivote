@@ -2,237 +2,280 @@
 import type { TypeChoix } from "@prisma/client";
 
 const {
-  data: votes,
-  status: voteStatus,
-  execute: updateVotes,
+    data: votes,
+    status: voteStatus,
+    execute: updateVotes,
 } = await useLazyFetch("/api/votes");
 const { data: user, status: userStatus } = await useLazyFetch("/api/role");
+const { data: syndicat, status: syndicatStatus } = await useLazyFetch(
+    "/api/syndicat/current",
+);
 const {
-  data: currentVote,
-  status: currentVoteStatus,
-  execute: updateCurrent,
+    data: currentVote,
+    status: currentVoteStatus,
+    execute: updateCurrent,
 } = await useLazyFetch("/api/vote/current");
 const {
-  data: currentRencontre,
-  status: currentRencontreStatus,
-  execute: updateCurrentRencontre,
+    data: currentRencontre,
+    status: currentRencontreStatus,
+    execute: updateCurrentRencontre,
 } = await useLazyFetch("/api/rencontre/current");
 
 const {
-  open,
-  send,
-  status: wsStatus,
+    open,
+    send,
+    status: wsStatus,
 } = useWebSocket("/api/ws/vote", {
-  immediate: false,
-  async onMessage(ws, event) {
-    if (typeof event.data === "string") {
-      if (event.data === "vote") {
-        await updateVotes();
-      }
-      if (event.data === "current") {
-        await updateCurrent();
-      }
-    }
-    await updateCurrentRencontre();
-  },
+    immediate: false,
+    async onMessage(ws, event) {
+        if (typeof event.data === "string") {
+            if (event.data === "vote") {
+                await updateVotes();
+            }
+            if (event.data === "current") {
+                await updateCurrent();
+            }
+        }
+        await updateCurrentRencontre();
+    },
 });
 
 onMounted(() => {
-  open();
+    open();
 });
 
 const updateAll = async () => {
-  send("vote");
-  send("current");
-  await Promise.all([updateVotes(), updateCurrent(), updateCurrentRencontre()]);
+    send("vote");
+    send("current");
+    await Promise.all([
+        updateVotes(),
+        updateCurrent(),
+        updateCurrentRencontre(),
+    ]);
 };
 
 const toast = useToast();
 
 const launch = async (id: number) => {
-  try {
-    await $fetch(`/api/vote/start/${id}`);
-    await updateAll();
-  } catch {
-    toast.add({
-      title: "Vote déjà en cours",
-      description: "Veuillez d'abord clôturer le vote en cours.",
-      color: "warning",
-    });
-  }
+    try {
+        await $fetch(`/api/vote/start/${id}`);
+        await updateAll();
+    } catch {
+        toast.add({
+            title: "Vote déjà en cours",
+            description: "Veuillez d'abord clôturer le vote en cours.",
+            color: "warning",
+        });
+    }
 };
 
 const voter = async (type: TypeChoix) => {
-  await $fetch(`/api/vote/current`, {
-    method: "POST",
-    body: {
-      type: type,
-    },
-  });
-  send("current");
-  await updateCurrent();
+    const body: Record<TypeChoix, number> = {} as Record<TypeChoix, number>;
+
+    body[type] = syndicat.value!.mandats[0]!.mandat;
+
+    await $fetch(`/api/vote/current`, {
+        method: "POST",
+        body,
+    });
+    send("current");
+    await updateCurrent();
 };
 
 const upcomingVotes = computed(() =>
-  (votes.value ?? []).filter((vote) => vote.status === "INITAL"),
+    (votes.value ?? []).filter((vote) => vote.status === "INITAL"),
 );
 
 const finishedVotes = computed(() =>
-  (votes.value ?? []).filter((vote) => vote.status === "CLOTURE"),
+    (votes.value ?? []).filter((vote) => vote.status === "CLOTURE"),
 );
 
 const voteToDelete = ref<number | null>(null);
 const showNewVote = ref(false);
 const showDeleteModal = computed({
-  get: () => voteToDelete.value !== null,
-  set: (val) => {
-    if (!val) voteToDelete.value = null;
-  },
+    get: () => voteToDelete.value !== null,
+    set: (val) => {
+        if (!val) voteToDelete.value = null;
+    },
 });
 const confirmDelete = (id: number) => {
-  voteToDelete.value = id;
+    voteToDelete.value = id;
 };
 const cancelDelete = () => {
-  voteToDelete.value = null;
+    voteToDelete.value = null;
 };
 const runDelete = async () => {
-  if (voteToDelete.value == null) return;
-  await $fetch("/api/vote", {
-    method: "delete",
-    body: { id: voteToDelete.value },
-  });
-  voteToDelete.value = null;
-  await updateAll();
+    if (voteToDelete.value == null) return;
+    await $fetch("/api/vote", {
+        method: "delete",
+        body: { id: voteToDelete.value },
+    });
+    voteToDelete.value = null;
+    await updateAll();
 };
 </script>
 
 <template>
-  <div>
-    <NuxtLayout>
-      <AppHeader
-        :title="
-          currentRencontreStatus === 'success' && currentRencontre
-            ? getRencontreName(currentRencontre)
-            : 'Votes'
-        "
-        :user="user"
-        :status="userStatus"
-        :ws-status="wsStatus"
-      />
+    <div>
+        <NuxtLayout>
+            <AppHeader
+                :title="
+                    currentRencontreStatus === 'success' && currentRencontre
+                        ? getRencontreName(currentRencontre)
+                        : 'Votes'
+                "
+                :user="user"
+                :status="userStatus"
+                :ws-status="wsStatus"
+            />
 
-      <div class="w-4xl mx-auto">
-        <p v-if="userStatus !== 'success'">Chargement des informations...</p>
-        <template v-else-if="user!.role === 'syndicat'">
-          <VoteCardLive
-            v-if="currentVoteStatus === 'success' && currentVote"
-            :vote="currentVote"
-            :user="user"
-            @vote="(type) => voter(type as TypeChoix)"
-          />
-        </template>
-        <VoteCurrentAdmin
-          v-else-if="user!.role === 'admin'"
-          :execute="updateAll"
-          :current-vote="currentVote"
-          :user="user"
-          :current-vote-status="currentVoteStatus"
-        />
-      </div>
-
-      <USeparator class="w-full my-5" />
-
-      <div
-        v-if="voteStatus === 'success' && userStatus === 'success'"
-        class="flex flex-wrap justify-center gap-2 pb-50 p-2"
-      >
-        <div class="w-4xl mx-auto">
-          <div class="flex items-center justify-between my-4">
-            <h2 class="text-xl font-bold">Votes à venir</h2>
-            <UButton
-              v-if="user!.role === 'admin'"
-              icon="mingcute:add-square-line"
-              color="primary"
-              :variant="upcomingVotes.length ? 'soft' : 'solid'"
-              @click="showNewVote = true"
-            >
-              Nouveau vote
-            </UButton>
-          </div>
-          <div v-if="upcomingVotes.length" class="flex flex-wrap gap-4">
-            <div
-              v-for="vote in upcomingVotes"
-              :key="vote.id"
-              class="flex flex-col gap-2 basis-[calc(50%-0.5rem)]"
-            >
-              <VoteCardUpcoming :vote="vote">
-                <template #actions>
-                  <div v-if="user!.role === 'admin'" class="flex gap-2">
-                    <UButton
-                      icon="mingcute:rocket-line"
-                      color="primary"
-                      class="w-1/2 justify-center"
-                      :variant="currentVote ? 'soft' : 'solid'"
-                      @click.prevent="launch(vote.id)"
-                    >
-                      Lancer le vote
-                    </UButton>
-                    <UButton
-                      icon="mingcute:delete-line"
-                      color="primary"
-                      variant="soft"
-                      class="w-1/2 justify-center"
-                      :disabled="
-                        vote.status !== 'INITAL' || vote.choix.length !== 0
-                      "
-                      @click.prevent="confirmDelete(vote.id)"
-                    >
-                      Supprimer
-                    </UButton>
-                  </div>
+            <div class="w-4xl mx-auto">
+                <p v-if="userStatus !== 'success'">
+                    Chargement des informations...
+                </p>
+                <template v-else-if="user!.role === 'syndicat'">
+                    <VoteCardLive
+                        v-if="
+                            currentVoteStatus === 'success' &&
+                            currentVote &&
+                            syndicatStatus === 'success' &&
+                            syndicat &&
+                            syndicat.mandats.length > 0
+                        "
+                        :vote="currentVote"
+                        :user="user"
+                        @vote="(type) => voter(type as TypeChoix)"
+                    />
                 </template>
-              </VoteCardUpcoming>
+                <VoteCurrentAdmin
+                    v-else-if="user!.role === 'admin'"
+                    :execute="updateAll"
+                    :current-vote="currentVote"
+                    :user="user"
+                    :current-vote-status="currentVoteStatus"
+                />
             </div>
-          </div>
-          <p v-else class="text-sm text-muted">Aucun vote planifié.</p>
 
-          <h2 class="text-xl mb-4 mt-12 font-bold">Votes terminés</h2>
-          <div v-if="finishedVotes.length" class="flex flex-wrap gap-4">
+            <USeparator class="w-full my-5" />
+
             <div
-              v-for="vote in finishedVotes"
-              :key="vote.id"
-              class="flex flex-col gap-2 basis-[calc(50%-0.5rem)]"
+                v-if="voteStatus === 'success' && userStatus === 'success'"
+                class="flex flex-wrap justify-center gap-2 pb-50 p-2"
             >
-              <VoteCardSummary :vote="vote" />
-            </div>
-          </div>
-          <p v-else class="text-sm text-muted">Aucun vote terminé.</p>
-        </div>
-      </div>
-    </NuxtLayout>
+                <div class="w-4xl mx-auto">
+                    <div class="flex items-center justify-between my-4">
+                        <h2 class="text-xl font-bold">Votes à venir</h2>
+                        <UButton
+                            v-if="user!.role === 'admin'"
+                            icon="mingcute:add-square-line"
+                            color="primary"
+                            :variant="upcomingVotes.length ? 'soft' : 'solid'"
+                            @click="showNewVote = true"
+                        >
+                            Nouveau vote
+                        </UButton>
+                    </div>
+                    <div
+                        v-if="upcomingVotes.length"
+                        class="flex flex-wrap gap-4"
+                    >
+                        <div
+                            v-for="vote in upcomingVotes"
+                            :key="vote.id"
+                            class="flex flex-col gap-2 basis-[calc(50%-0.5rem)]"
+                        >
+                            <VoteCardUpcoming :vote="vote">
+                                <template #actions>
+                                    <div
+                                        v-if="user!.role === 'admin'"
+                                        class="flex gap-2"
+                                    >
+                                        <UButton
+                                            icon="mingcute:rocket-line"
+                                            color="primary"
+                                            class="w-1/2 justify-center"
+                                            :variant="
+                                                currentVote ? 'soft' : 'solid'
+                                            "
+                                            @click.prevent="launch(vote.id)"
+                                        >
+                                            Lancer le vote
+                                        </UButton>
+                                        <UButton
+                                            icon="mingcute:delete-line"
+                                            color="primary"
+                                            variant="soft"
+                                            class="w-1/2 justify-center"
+                                            :disabled="
+                                                vote.status !== 'INITAL' ||
+                                                vote.choix.length !== 0
+                                            "
+                                            @click.prevent="
+                                                confirmDelete(vote.id)
+                                            "
+                                        >
+                                            Supprimer
+                                        </UButton>
+                                    </div>
+                                </template>
+                            </VoteCardUpcoming>
+                        </div>
+                    </div>
+                    <p v-else class="text-sm text-muted">
+                        Aucun vote planifié.
+                    </p>
 
-    <UModal v-model:open="showDeleteModal">
-      <template #content>
-        <UCard>
-          <template #header>
-            <div class="text-lg font-semibold">Supprimer le vote</div>
-          </template>
-          <p class="text-sm text-muted">
-            Confirmer la suppression de ce vote ?
-          </p>
-          <template #footer>
-            <div class="flex justify-end gap-3">
-              <UButton color="neutral" variant="ghost" @click="cancelDelete">
-                Annuler
-              </UButton>
-              <UButton color="primary" variant="soft" @click="runDelete">
-                Supprimer
-              </UButton>
+                    <h2 class="text-xl mb-4 mt-12 font-bold">Votes terminés</h2>
+                    <div
+                        v-if="finishedVotes.length"
+                        class="flex flex-wrap gap-4"
+                    >
+                        <div
+                            v-for="vote in finishedVotes"
+                            :key="vote.id"
+                            class="flex flex-col gap-2 basis-[calc(50%-0.5rem)]"
+                        >
+                            <VoteCardSummary :vote="vote" />
+                        </div>
+                    </div>
+                    <p v-else class="text-sm text-muted">Aucun vote terminé.</p>
+                </div>
             </div>
-          </template>
-        </UCard>
-      </template>
-    </UModal>
+        </NuxtLayout>
 
-    <VoteCreateModal v-model:open="showNewVote" @created="updateAll" />
-  </div>
+        <UModal v-model:open="showDeleteModal">
+            <template #content>
+                <UCard>
+                    <template #header>
+                        <div class="text-lg font-semibold">
+                            Supprimer le vote
+                        </div>
+                    </template>
+                    <p class="text-sm text-muted">
+                        Confirmer la suppression de ce vote ?
+                    </p>
+                    <template #footer>
+                        <div class="flex justify-end gap-3">
+                            <UButton
+                                color="neutral"
+                                variant="ghost"
+                                @click="cancelDelete"
+                            >
+                                Annuler
+                            </UButton>
+                            <UButton
+                                color="primary"
+                                variant="soft"
+                                @click="runDelete"
+                            >
+                                Supprimer
+                            </UButton>
+                        </div>
+                    </template>
+                </UCard>
+            </template>
+        </UModal>
+
+        <VoteCreateModal v-model:open="showNewVote" @created="updateAll" />
+    </div>
 </template>

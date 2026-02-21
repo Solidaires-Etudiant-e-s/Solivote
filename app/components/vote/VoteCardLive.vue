@@ -1,10 +1,10 @@
 <script setup lang="ts">
 import { UBadge } from "#components";
 import type { TypeVote } from "@prisma/client";
+import type { JsonArray } from "@prisma/client/runtime/client";
 
 type VoteChoice = {
-    date: Date | string;
-    choix: string;
+    choix: unknown;
     syndicat?: { nom?: string } | null;
     [key: string]: unknown;
 };
@@ -47,9 +47,9 @@ const choiceGroups = computed(() => {
     };
 
     for (const choix of props.vote.choix || []) {
-        const key = choix.choix as keyof typeof base;
-        if (key in base) {
-            base[key].push(choix);
+        const c = choix.choix as JsonArray;
+        for (const k in c) {
+            base[k as keyof typeof base].push(c[k]);
         }
     }
 
