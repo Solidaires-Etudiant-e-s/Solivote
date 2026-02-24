@@ -25,6 +25,9 @@ export default defineEventHandler(async (_event) => {
           syndicat: true,
         },
       },
+      possibilites: {
+        include: true,
+      },
     },
   });
 });

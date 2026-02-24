@@ -1,28 +1,65 @@
 import { z } from "zod";
-import { TypeChoix } from "@prisma/client";
+import { StatusVote } from "@prisma/client";
 
 const userSchema = z.object({
-  type: z.nativeEnum(TypeChoix),
+  choix: z.array(
+    z.object({
+      // type: z.enum(TypeChoix).or(z.number().min(0)),
+      type: z.string().min(1).or(z.number().min(0)),
+      mandat: z.int().min(0),
+    }),
+  ),
+  syndicat: z.looseObject({
+    nom: z.string(),
+    mandats: z.array(z.looseObject({ mandat: z.number().min(1) })),
+  }),
 });
 
 export default defineEventHandler(async (event) => {
-  const { type } = await readValidatedBody(event, (body) =>
+  let { choix, syndicat } = await readValidatedBody(event, (body) =>
     userSchema.parse(body),
   );
 
-  const nom = <string>event.node.req.headers["ynh_user"];
+  if (!syndicat) {
+    syndicat = await currentSyndicat(event);
+  }
 
-  const syndicat = await prisma.syndicat.upsert({
+  if (!syndicat) {
+    throw new Error(`Current syndicat not found`);
+  }
+
+  const en_vote = await enVote();
+
+  let total_mandats = 0;
+  for (const i of choix) {
+    total_mandats += i.mandat;
+
+    if (typeof i === "number") {
+      if (!en_vote.possibilites.some((e) => e.id === i)) {
+        throw new Error(`choix invalid`);
+      }
+    }
+  }
+
+  if (total_mandats !== syndicat.mandats[0].mandat) {
+    throw createError({
+      statusCode: 400,
+      statusMessage: "mandats suplied is not the totality of mandats",
+    });
+  }
+
+  const vote = await prisma.vote.findFirstOrThrow({
     where: {
-      nom,
+      status: StatusVote.EN_VOTE,
+      rencontre: {
+        mandats: {
+          some: {
+            syndicatId: syndicat.id,
+          },
+        },
+      },
     },
-    create: {
-      nom,
-    },
-    update: {},
   });
-
-  const vote = await enVote();
 
   return prisma.choix.upsert({
     where: {
@@ -32,17 +69,13 @@ export default defineEventHandler(async (event) => {
       },
     },
     update: {
-      type: type,
+      choix,
       date: new Date(),
     },
     create: {
-      type: type,
-      syndicat: {
-        connect: syndicat,
-      },
-      vote: {
-        connect: { id: vote?.id },
-      },
+      choix,
+      syndicatId: syndicat.id,
+      voteId: vote.id,
     },
   });
 });

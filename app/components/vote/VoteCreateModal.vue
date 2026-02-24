@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from "@nuxt/ui";
+import { TypeVote } from "@prisma/client";
 import { z } from "zod";
 
 const props = defineProps<{
@@ -11,18 +12,29 @@ const emit = defineEmits<{
   (event: "created"): void;
 }>();
 
-const schema = z.object({
-  nom: z.string().min(1),
-  description: z.string().min(1),
-  content: z.string().min(1),
-});
+const schema = z
+  .object({
+    nom: z.string().min(1),
+    description: z.string().nullable(),
+    possibilites: z.array(z.string().min(1)),
+    type: z.enum(TypeVote),
+  })
+  .refine((input) => {
+    if (input.type != TypeVote.CONDORCET) {
+      input.possibilites = [];
+      return true;
+    }
+    if (input.possibilites.length == 0) return false;
+    return true;
+  });
 
 type Schema = z.output<typeof schema>;
 
 const new_vote = reactive({
   nom: "",
   description: "",
-  content: "",
+  type: TypeVote.STANDARD,
+  possibilites: [],
 });
 
 const toast = useToast();
@@ -39,7 +51,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     });
     new_vote.nom = "";
     new_vote.description = "";
-    new_vote.content = "";
+    new_vote.possibilites = [];
     emit("update:open", false);
     emit("created");
   } else {
@@ -76,8 +88,22 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                 placeholder="Ex. Adoption du budget 2026"
               />
             </UFormField>
+            <UFormField label="Type" name="type">
+              <USelect
+                v-model="new_vote.type"
+                :items="Object.values(TypeVote)"
+              />
+            </UFormField>
+
+            <template v-if="new_vote.type == TypeVote.CONDORCET">
+              <UInputTags
+                v-model="new_vote.possibilites"
+                placeholder="choix du condorcet"
+              />
+            </template>
+
             <UFormField
-              label="Résumé"
+              label="Résumé (optionel)"
               name="description"
               help="Affiché dans la liste (1–2 phrases)."
             >
@@ -86,18 +112,6 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                 class="w-full"
                 placeholder="Ex. Vote de principe sur la proposition présentée."
                 :rows="2"
-              />
-            </UFormField>
-            <UFormField
-              label="Texte complet"
-              name="content"
-              help="Détails, contexte, éléments soumis au vote."
-            >
-              <UTextarea
-                v-model="new_vote.content"
-                class="w-full"
-                placeholder="Décrivez le contexte, les impacts, et les modalités..."
-                :rows="4"
               />
             </UFormField>
           </div>
