@@ -11,7 +11,7 @@ watch(user, async () => {
 
 const updateRencontresAndDetails = async () => {
     await updateRencontres();
-    if (user!.value!.role === "admin") {
+    if (user.value?.role === "admin") {
         details.value = await Promise.all(
             rencontres.value!.map((i) =>
                 $fetch(`/api/rencontre/syndicat/${i.id}`),
@@ -114,7 +114,10 @@ const syndicat = ref([[]]);
                     :rencontre
                     :execute="updateAll"
                 >
-                    <template v-if="user!.role === 'admin'">
+                    <div
+                        v-if="user!.role === 'admin'"
+                        class="flex justify-center gap-5"
+                    >
                         <UForm
                             v-if="
                                 details[index] &&
@@ -170,7 +173,7 @@ const syndicat = ref([[]]);
                         >
                             Réinitialiser la rencontre
                         </UButton>
-                    </template>
+                    </div>
                 </RencontreCard>
             </template>
         </div>

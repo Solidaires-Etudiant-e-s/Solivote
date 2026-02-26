@@ -1,13 +1,16 @@
-export default defineEventHandler(async (event) => {
-    const rencontre = await currentRencontre();
+export default defineEventHandler(async (_event) => {
+  const rencontre = await currentRencontre();
 
-    return await prisma.syndicat.findMany({
-        include: {
-            mandats: {
-                where: {
-                    rencontreId: rencontre?.id,
-                },
-            },
+  return await prisma.syndicat.findMany({
+    include: {
+      mandats: true,
+    },
+    where: {
+      mandats: {
+        some: {
+          rencontreId: rencontre?.id,
         },
-    });
+      },
+    },
+  });
 });

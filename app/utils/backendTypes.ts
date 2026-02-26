@@ -50,7 +50,7 @@ export type Choix = {
   date: Date;
   syndicat: Syndicat;
   vote: Vote;
-  choix: string; //json
+  choix: any[]; //json
 };
 
 export type Syndicat = {

@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import { UBadge } from "#components";
-import type { JsonArray } from "@prisma/client/runtime/client";
 
 type Possibilite = {
     id: number;
@@ -48,11 +47,11 @@ const choiceGroups = computed(() => {
     > = {};
 
     for (const i of props.vote.choix) {
-        for (const y of i.choix as JsonArray) {
-            if (!base[y!.type]) {
-                base[y!.type] = [];
+        for (const y of i.choix) {
+            if (!base[y.type]) {
+                base[y.type] = [];
             }
-            base[y!.type]!.push({ syndicat: i.syndicat, mandat: y!.mandat });
+            base[y.type]!.push({ syndicat: i.syndicat, mandat: y.mandat });
         }
     }
 
@@ -85,7 +84,7 @@ const panachage = ref({} as Panache);
 const totalVotes = computed(() => {
     let total = 0;
     for (const i of props.vote.choix) {
-        for (const y of i.choix as JsonArray) {
+        for (const y of i.choix) {
             total += y!.mandat;
         }
     }
@@ -175,15 +174,20 @@ const vote_pour = ref("");
                         >
                             <UButton
                                 v-if="!en_panachage"
+                                icon="mingcute:check-fill"
+                                color="primary"
                                 @click="emit('vote', group.key, vote_pour)"
                             />
                             <template v-else>
-                                <UInputNumber v-model="panachage[group.key]" />
-                                {{ panachage[group.key] }}
+                                <UInputNumber
+                                    v-model="panachage[group.key]"
+                                    :min="0"
+                                    :default-value="0"
+                                />
                             </template>
                         </template>
-                        <span>{{ group.label }}</span>
                     </label>
+                    <span>{{ group.label }}</span>
                     <div
                         class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden"
                     >
@@ -228,18 +232,18 @@ const vote_pour = ref("");
                     {{ groupNames(group.key, choiceGroups) || "—" }}
                 </div>
             </div>
-            <div
-                v-if="$slots.actions"
-                class="flex items-center justify-between gap-3"
-            >
-                <slot name="actions" />
-            </div>
             <UButton
                 v-if="en_panachage"
                 @click="emit('panacher', panachage, vote_pour)"
             >
                 Panacher !
             </UButton>
+            <div
+                v-if="$slots.actions"
+                class="flex items-center justify-between gap-3"
+            >
+                <slot name="actions" />
+            </div>
         </div>
     </UCard>
 </template>
