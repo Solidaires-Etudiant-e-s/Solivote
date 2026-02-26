@@ -33,6 +33,7 @@ const {
 });
 
 const details = ref<string[][]>([]);
+await updateRencontresAndDetails();
 onMounted(async () => {
     open();
 });
