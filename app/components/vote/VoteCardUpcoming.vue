@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { TypeVote } from "@prisma/client";
-
 type Possibilite = {
     id: number;
     nom: string;

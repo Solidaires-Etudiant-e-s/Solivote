@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import { TypeVote, type TypeChoix } from "@prisma/client";
-
 type VoteChoice = {
     date: Date | string;
     choix: TypeChoix;
