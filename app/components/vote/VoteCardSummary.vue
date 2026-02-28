@@ -1,4 +1,5 @@
 <script setup lang="ts">
+import type { TypeChoix, TypeVote } from "~/utils/backendTypes";
 type VoteChoice = {
     date: Date | string;
     choix: Array<{ type: string | number; mandat: number }>;
@@ -10,7 +11,7 @@ type VoteLike = {
     id: number;
     nom: string;
     type: TypeVote;
-    description?: string;
+    description?: string | null;
     choix: VoteChoice[];
     possibilites?: Array<{ id: number; nom: string }>;
     status: string;
@@ -20,7 +21,7 @@ const props = defineProps<{
     vote: VoteLike;
 }>();
 
-const choiceMeta = [
+const choiceMeta: Array<{ key: TypeChoix; label: string }> = [
     { key: "POUR", label: "Pour" },
     { key: "CONTRE", label: "Contre" },
     { key: "ABSTENTION", label: "Abstention" },
@@ -103,20 +104,25 @@ const winnerPercent = computed(() => {
 <template>
     <UCard class="w-full">
         <template #header>
-            <div class="flex flex-col gap-1 w-all">
-                <div class="text-base font-serif flex justify-between">
-                    {{ props.vote.nom }}
-                    <UBadge>{{ props.vote.type }}</UBadge>
+            <div class="flex flex-col gap-1 w-full">
+                <div
+                    class="text-base font-serif flex items-start justify-between gap-2"
+                >
+                    <span class="break-words">{{ props.vote.nom }}</span>
+                    <UBadge class="shrink-0">{{ props.vote.type }}</UBadge>
                 </div>
-                <div v-if="props.vote.description" class="text-xs text-muted">
+                <div
+                    v-if="props.vote.description"
+                    class="text-xs text-muted break-words"
+                >
                     {{ props.vote.description }}
                 </div>
                 <div
                     v-if="props.vote.type == TypeVote.CONDORCET"
-                    class="flex space-x-4 flex-wrap"
+                    class="flex gap-2 flex-wrap"
                 >
                     <template
-                        v-for="possibilite in props.vote.possibilites"
+                        v-for="possibilite in props.vote.possibilites ?? []"
                         :key="possibilite.id"
                     >
                         <UBadge>{{ possibilite.nom }}</UBadge>
@@ -125,8 +131,8 @@ const winnerPercent = computed(() => {
             </div>
         </template>
 
-        <div class="flex items-center gap-3">
-            <div class="w-28 shrink-0 text-sm font-semibold">
+        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
+            <div class="w-full sm:w-28 shrink-0 text-sm font-semibold">
                 {{ winnerLabel }}
             </div>
             <div

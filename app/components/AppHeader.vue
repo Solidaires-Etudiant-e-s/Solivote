@@ -33,7 +33,11 @@ const displayName = computed(() => {
                 </UBadge>
                 <UBadge v-else color="error">Déconnecté</UBadge>
 
-                <UUser v-if="props.user && displayName" :name="displayName" />
+                <UUser
+                    v-if="props.user && displayName"
+                    :name="displayName"
+                    class="hidden sm:flex"
+                />
             </template>
         </template>
     </UHeader>

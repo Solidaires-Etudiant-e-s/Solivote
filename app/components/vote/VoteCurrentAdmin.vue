@@ -1,11 +1,7 @@
 <script setup lang="ts">
-type VoteLike = Pick<Vote, "id" | "nom" | "description" | "status"> & {
-    choix: {
-        date: Date | string;
-        type: string;
-        syndicat?: { nom?: string } | null;
-    }[];
-};
+import type { VotePayload } from "~/utils/frontendTypes";
+
+type VoteLike = VotePayload;
 
 const props = defineProps<{
     user?: { role: string; name?: string } | null;
@@ -15,7 +11,7 @@ const props = defineProps<{
 }>();
 
 const { data: syndicats } = await useLazyFetch("/api/syndicat");
-const { data: votesCache } = useNuxtData<Vote[]>("votes");
+const { data: votesCache } = useNuxtData<VoteLike[]>("votes");
 const { data: currentVoteCache } = useNuxtData<VoteLike | null>("vote-current");
 const syndicatCount = computed(() => syndicats.value?.length ?? 0);
 const isStoppingVote = ref(false);
@@ -77,7 +73,7 @@ const emit = defineEmits<{
 </script>
 
 <template>
-    <div class="flex justify-center">
+    <div class="w-full">
         <VoteCardLive
             v-if="props.currentVoteStatus === 'success' && displayCurrentVote"
             :vote="displayCurrentVote"
@@ -91,6 +87,7 @@ const emit = defineEmits<{
                 <UButton
                     icon="mingcute:choice-line"
                     color="primary"
+                    class="w-full sm:w-auto"
                     :loading="isStoppingVote"
                     :disabled="isStoppingVote"
                     @click.prevent="stop()"

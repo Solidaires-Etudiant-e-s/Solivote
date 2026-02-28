@@ -1,12 +1,17 @@
-export default function (key: string, choiceGroups) {
-  if (!choiceGroups?.[key]) {
-    return 0;
-  }
+type ChoiceEntry = { mandat: number };
 
-  let total = 0;
-  for (const i in choiceGroups[key]) {
-    const mandat = Number(choiceGroups[key][i].mandat);
-    total += Number.isFinite(mandat) ? mandat : 0;
-  }
-  return total;
+export default function (
+    key: string,
+    choiceGroups: Record<string, ChoiceEntry[]>,
+) {
+    if (!choiceGroups?.[key]) {
+        return 0;
+    }
+
+    let total = 0;
+    for (const entry of choiceGroups[key]) {
+        const mandat = Number(entry.mandat);
+        total += Number.isFinite(mandat) ? mandat : 0;
+    }
+    return total;
 }

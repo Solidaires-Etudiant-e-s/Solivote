@@ -44,22 +44,25 @@ export type Possibilite = {
 
 export type Vote = {
   id: number;
-  date: Date;
+  date: Date | string;
   nom: string;
   type: TypeVote;
-  description: string;
+  description: string | null;
+  content: string;
   rencontreId: number;
   status: StatusVote;
   choix: Choix[];
-  possibilites: Possibilite[];
-  rencontre: Rencontre;
+  possibilites?: Possibilite[];
+  rencontre?: Rencontre;
 };
 
 export type Choix = {
   id: number;
-  date: Date;
+  date: Date | string;
   syndicat: Syndicat;
-  vote: Vote;
+  syndicatId?: number;
+  voteId?: number;
+  vote?: Vote;
   choix: Array<{ type: string | number; mandat: number }>;
 };
 
@@ -72,15 +75,15 @@ export type Mandat = {
   syndicatId: number;
   rencontreId: number;
   syndicat: Syndicat;
-  rencontre: Rencontre;
+  rencontre?: Rencontre;
   mandat: number;
 };
 
 export type Rencontre = {
   id: number;
   nom: string;
-  dateDebut: Date;
-  dateFin: Date;
+  dateDebut: Date | string;
+  dateFin: Date | string;
   type: TypeRencontre;
   status: StatusRencontre;
   mandats: Mandat[];

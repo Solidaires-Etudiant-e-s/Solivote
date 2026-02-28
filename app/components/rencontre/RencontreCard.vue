@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { TableColumn } from "@nuxt/ui";
+import { StatusRencontre } from "~/utils/backendTypes";
 import getRencontreName from "~/utils/getRencontreName";
 
 type RencontreLike = {

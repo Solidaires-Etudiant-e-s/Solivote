@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { UBadge } from "#components";
+import { TypeVote } from "~/utils/backendTypes";
 
 type Possibilite = {
     id: number;
@@ -16,9 +17,9 @@ type VoteLike = {
     id: number;
     rencontreId: number;
     nom: string;
-    description?: string;
+    description?: string | null;
     type: TypeVote;
-    possibilites: Possibilite[];
+    possibilites?: Possibilite[];
     choix: Array<{
         syndicat: Syndicat;
         choix: Array<{ type: string | number; mandat: number }>;
@@ -81,7 +82,7 @@ const choiceMeta = computed(() => {
         base.push({ key: "POUR", label: "Pour" });
         base.push({ key: "CONTRE", label: "Contre" });
     } else {
-        for (const i of props.vote.possibilites) {
+        for (const i of props.vote.possibilites ?? []) {
             base.push({ key: i.id, label: i.nom });
         }
     }
@@ -136,7 +137,7 @@ const totalVotes = computed(() => {
 });
 
 const percentFor = (key: string | number) => {
-    const count = Number(groupCount(key as unknown as string | number, choiceGroups.value));
+    const count = Number(groupCount(String(key), choiceGroups.value));
     const total = Number(totalVotes.value);
 
     if (!Number.isFinite(count) || !Number.isFinite(total)) {
@@ -177,21 +178,21 @@ watch(vote_pour, () => {
 </script>
 
 <template>
-    <UCard class="w-full h-max mt-4">
+    <UCard class="w-full h-max mt-3 sm:mt-4">
         <template #header>
-            <div class="flex justify-between items-start">
-                <div class="flex flex-col gap-1">
-                    <div class="text-xl font-serif">
+            <div class="flex flex-col sm:flex-row sm:justify-between gap-3">
+                <div class="flex flex-col gap-1 min-w-0">
+                    <div class="text-lg sm:text-xl font-serif break-words">
                         {{ props.vote.nom }}
                     </div>
                     <div
                         v-if="props.vote.description"
-                        class="text-xs text-muted"
+                        class="text-xs text-muted break-words"
                     >
                         {{ props.vote.description }}
                     </div>
                 </div>
-                <div class="flex items-center gap-2">
+                <div class="flex items-center gap-2 flex-wrap shrink-0">
                     <UBadge>{{ props.vote.type }}</UBadge>
                     <UBadge label="En cours..." color="primary">
                         <template #leading>
@@ -211,14 +212,18 @@ watch(vote_pour, () => {
                     props.user?.role === 'admin' &&
                     syndicatsStatus === 'success'
                 "
-                class="flex items-center gap-x-4"
+                class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-4"
             >
                 Voter à la place de :
-                <UInputMenu v-model="vote_pour" :items="syndicatsName" />
+                <UInputMenu
+                    v-model="vote_pour"
+                    :items="syndicatsName"
+                    class="w-full sm:w-auto"
+                />
             </div>
             <div
                 v-if="props.user?.role === 'syndicat' || vote_pour"
-                class="flex items-center gap-x-4"
+                class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-4"
             >
                 <span
                     >Panachage ({{ availableMandats }} mandat{{
@@ -232,84 +237,85 @@ watch(vote_pour, () => {
                 :key="group.key"
                 class="flex flex-col gap-2"
             >
-                <div class="flex items-center gap-3">
-                    <label
-                        class="shrink-0 flex items-center gap-2 text-sm font-semibold"
-                    >
-                        <template
-                            v-if="props.user?.role === 'syndicat' || vote_pour"
-                        >
-                            <UButton
-                                v-if="!en_panachage"
-                                :icon="
-                                    selectedChoiceKey === String(group.key)
-                                        ? 'mingcute:check-fill'
-                                        : 'mingcute:square-line'
-                                "
-                                :color="
-                                    selectedChoiceKey === String(group.key)
-                                        ? 'primary'
-                                        : 'neutral'
-                                "
-                                :variant="
-                                    selectedChoiceKey === String(group.key)
-                                        ? 'solid'
-                                        : 'outline'
-                                "
-                                @click="emit('vote', group.key, vote_pour)"
-                            />
-                            <template v-else>
-                                <UInputNumber
-                                    v-model="panachage[group.key]"
-                                    :min="0"
-                                    :default-value="0"
-                                    class="w-24"
-                                />
-                            </template>
-                        </template>
-                    </label>
-                    <span>{{ group.label }}</span>
+                <div class="flex items-start gap-3">
                     <div
-                        class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden"
+                        v-if="props.user?.role === 'syndicat' || vote_pour"
+                        class="shrink-0 self-center flex items-center"
                     >
-                        <div
-                            class="h-full transition-[width] duration-500 ease-out"
-                            :class="
-                                percentFor(group.key) > 0
-                                    ? 'bg-primary'
-                                    : 'bg-secondary'
+                        <UButton
+                            v-if="!en_panachage"
+                            :icon="
+                                selectedChoiceKey === String(group.key)
+                                    ? 'mingcute:check-fill'
+                                    : 'mingcute:square-line'
                             "
-                            :style="{
-                                width: `${percentFor(group.key)}%`,
-                            }"
+                            :color="
+                                selectedChoiceKey === String(group.key)
+                                    ? 'primary'
+                                    : 'neutral'
+                            "
+                            :variant="
+                                selectedChoiceKey === String(group.key)
+                                    ? 'solid'
+                                    : 'outline'
+                            "
+                            @click="emit('vote', String(group.key), vote_pour)"
                         />
+                        <UInputNumber
+                            v-else
+                            v-model="panachage[group.key]"
+                            :min="0"
+                            :default-value="0"
+                            class="w-20 sm:w-24"
+                        />
+                    </div>
+                    <div class="flex-1 min-w-0 flex flex-col gap-1.5">
+                        <span class="text-sm font-medium sm:font-normal">{{
+                            group.label
+                        }}</span>
                         <div
-                            class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
-                            :class="
-                                percentFor(group.key) === 0
-                                    ? 'text-muted'
-                                    : 'text-white'
-                            "
+                            class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden"
                         >
-                            {{ groupCount(group.key, choiceGroups) }} ({{
-                                percentFor(group.key)
-                            }}%)
+                            <div
+                                class="h-full transition-[width] duration-500 ease-out"
+                                :class="
+                                    percentFor(group.key) > 0
+                                        ? 'bg-primary'
+                                        : 'bg-secondary'
+                                "
+                                :style="{
+                                    width: `${percentFor(group.key)}%`,
+                                }"
+                            />
+                            <div
+                                class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
+                                :class="
+                                    percentFor(group.key) === 0
+                                        ? 'text-muted'
+                                        : 'text-white'
+                                "
+                            >
+                                {{ groupCount(String(group.key), choiceGroups) }} ({{
+                                    percentFor(group.key)
+                                }}%)
+                            </div>
+                        </div>
+                        <div class="text-xs text-muted">
+                            {{ groupNames(String(group.key), choiceGroups) || "—" }}
                         </div>
                     </div>
-                </div>
-                <div class="text-xs text-muted">
-                    {{ groupNames(group.key, choiceGroups) || "—" }}
                 </div>
             </div>
             <UButton
                 v-if="en_panachage"
+                class="w-full sm:w-auto"
                 @click="emit('panacher', panachage, vote_pour)"
             >
                 Panacher !
             </UButton>
             <div
                 v-if="$slots.actions"
-                class="flex items-center justify-between gap-3"
+                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
             >
                 <slot name="actions" />
             </div>

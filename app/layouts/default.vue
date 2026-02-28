@@ -96,8 +96,8 @@ const createRencontre = async () => {
         id: optimisticId,
         nom,
         type: newRencontre.type,
-        dateDebut,
-        dateFin,
+        dateDebut: dateDebut.toISOString(),
+        dateFin: dateFin.toISOString(),
         status: StatusRencontre.INITIAL,
     };
     lasts.value = [optimisticRencontre, ...previousLasts].slice(0, 5);

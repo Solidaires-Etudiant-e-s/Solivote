@@ -1,6 +1,8 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from "@nuxt/ui";
 import { z } from "zod";
+import type { Vote } from "~/utils/backendTypes";
+import { StatusVote, TypeVote } from "~/utils/backendTypes";
 
 const props = defineProps<{
     open: boolean;
@@ -19,7 +21,7 @@ const schema = z
         type: z.enum(Object.values(TypeVote)),
     })
     .refine((input) => {
-        if (input.type != TypeVote.CONDORCET) {
+        if (input.type !== TypeVote.CONDORCET) {
             input.possibilites = [];
             return true;
         }
@@ -29,7 +31,12 @@ const schema = z
 
 type Schema = z.output<typeof schema>;
 
-const new_vote = reactive({
+const new_vote = reactive<{
+    nom: string;
+    description: string;
+    type: TypeVote;
+    possibilites: string[];
+}>({
     nom: "",
     description: "",
     type: TypeVote.STANDARD,
@@ -129,7 +136,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                             />
                         </UFormField>
 
-                        <template v-if="new_vote.type == TypeVote.CONDORCET">
+                        <template v-if="new_vote.type === TypeVote.CONDORCET">
                             <UInputTags
                                 v-model="new_vote.possibilites"
                                 placeholder="choix du condorcet"
@@ -151,10 +158,13 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                     </div>
 
                     <template #footer>
-                        <div class="flex justify-end gap-3">
+                        <div
+                            class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3"
+                        >
                             <UButton
                                 color="neutral"
                                 variant="ghost"
+                                class="w-full sm:w-auto"
                                 @click="emit('update:open', false)"
                             >
                                 Annuler
@@ -162,6 +172,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                             <UButton
                                 type="submit"
                                 color="primary"
+                                class="w-full sm:w-auto"
                                 :loading="isCreatingVote"
                                 :disabled="isCreatingVote"
                             >

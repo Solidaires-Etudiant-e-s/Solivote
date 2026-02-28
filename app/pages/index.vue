@@ -1,5 +1,7 @@
 <script setup lang="ts">
 import type { Ref } from "vue";
+import type { TypeChoix } from "~/utils/backendTypes";
+import type { VoteChoice, VotePayload } from "~/utils/frontendTypes";
 
 type Panache = Record<string, number>;
 type ResolvedSyndicat = {
@@ -11,12 +13,14 @@ type ResolvedSyndicat = {
 const {
     data: votes,
     status: voteStatus,
-} = await useLazyFetch("/api/votes", { key: "votes" });
+} = await useLazyFetch<VotePayload[]>("/api/votes", { key: "votes" });
 const { data: user, status: userStatus } = await useLazyFetch("/api/role");
 const {
     data: currentVote,
     status: currentVoteStatus,
-} = await useLazyFetch("/api/vote/current", { key: "vote-current" });
+} = await useLazyFetch<VotePayload | null>("/api/vote/current", {
+    key: "vote-current",
+});
 const {
     data: currentRencontre,
     status: currentRencontreStatus,
@@ -31,13 +35,17 @@ let voteStream: EventSource | null = null;
 const { sync } = usePatchedFetchState();
 
 const syncVotesFromServer = async () => {
-    await sync(votes, () => $fetch<Vote[]>("/api/votes"), "byId");
+    await sync(
+        votes as Ref<VotePayload[] | undefined>,
+        () => $fetch<VotePayload[]>("/api/votes"),
+        "byId",
+    );
 };
 
 const syncCurrentVoteFromServer = async () => {
     await sync(
-        currentVote as Ref<Vote | null | undefined>,
-        () => $fetch<Vote | null>("/api/vote/current"),
+        currentVote as Ref<VotePayload | null | undefined>,
+        () => $fetch<VotePayload | null>("/api/vote/current"),
         "value",
     );
 };
@@ -45,10 +53,7 @@ const syncCurrentVoteFromServer = async () => {
 const syncCurrentRencontreFromServer = async () => {
     await sync(
         currentRencontre as Ref<Rencontre | null | undefined>,
-        () =>
-            $fetch<Rencontre | null>(
-                "/api/rencontre/current",
-            ),
+        () => $fetch<Rencontre | null>("/api/rencontre/current"),
         "value",
     );
 };
@@ -105,25 +110,19 @@ const normalizeSyndicat = (value: unknown): ResolvedSyndicat | null => {
     const currentRencontreId =
         currentVote.value?.rencontreId ?? currentRencontre.value?.id;
     if (currentRencontreId == null) return null;
-    const mandats = (Array.isArray(raw.mandats) ? raw.mandats : [])
-        .map((entry) => {
-            if (!entry || typeof entry !== "object") return null;
-            const data = entry as Record<string, unknown>;
-            const mandat = Number(data.mandat);
-            if (!Number.isFinite(mandat) || mandat <= 0) return null;
+    const mandats: Array<{ mandat: number; rencontreId?: number }> = [];
+    for (const entry of Array.isArray(raw.mandats) ? raw.mandats : []) {
+        if (!entry || typeof entry !== "object") continue;
+        const data = entry as Record<string, unknown>;
+        const mandat = Number(data.mandat);
+        if (!Number.isFinite(mandat) || mandat <= 0) continue;
+        const rencontreId = Number(data.rencontreId);
 
-            const rencontreId = Number(data.rencontreId);
-            return {
-                mandat: Math.trunc(mandat),
-                rencontreId: Number.isInteger(rencontreId)
-                    ? rencontreId
-                    : undefined,
-            };
-        })
-        .filter(
-            (entry): entry is { mandat: number; rencontreId?: number } =>
-                entry !== null,
-        );
+        mandats.push({
+            mandat: Math.trunc(mandat),
+            ...(Number.isInteger(rencontreId) ? { rencontreId } : {}),
+        });
+    }
 
     const scopedMandats = mandats.filter(
         (mandat) => mandat.rencontreId === currentRencontreId,
@@ -212,12 +211,12 @@ const voter = async (
     body.choix.push({ type: type, mandat: totalMandats(body.syndicat) });
 
     const previousChoices = cloneValue(currentVote.value?.choix ?? []);
-    const optimisticChoice = {
+    const optimisticChoice: VoteChoice = {
         id: -Date.now(),
-        date: new Date(),
+        date: new Date().toISOString(),
         syndicat: body.syndicat,
         choix: body.choix,
-    } as unknown as Choix;
+    };
 
     if (currentVote.value) {
         const idx = currentVote.value.choix.findIndex(
@@ -272,12 +271,12 @@ const panacher = async (
 
     if (!body.syndicat) return;
     const previousChoices = cloneValue(currentVote.value?.choix ?? []);
-    const optimisticChoice = {
+    const optimisticChoice: VoteChoice = {
         id: -Date.now(),
-        date: new Date(),
+        date: new Date().toISOString(),
         syndicat: body.syndicat,
         choix: body.choix,
-    } as unknown as Choix;
+    };
 
     if (currentVote.value) {
         const idx = currentVote.value.choix.findIndex(
@@ -377,7 +376,7 @@ const runDelete = async () => {
                 :sse-status="wsStatus"
         />
 
-            <div class="w-4xl mx-auto">
+            <div class="w-full max-w-4xl mx-auto px-3 sm:px-4">
                 <p v-if="userStatus !== 'success'">
                     Chargement des informations...
                 </p>
@@ -418,10 +417,12 @@ const runDelete = async () => {
 
             <div
                 v-if="voteStatus === 'success' && userStatus === 'success'"
-                class="flex flex-wrap justify-center gap-2 pb-50 p-2"
+                class="w-full px-2 sm:px-4 pb-24 sm:pb-50"
             >
-                <div class="w-4xl mx-auto">
-                    <div class="flex items-center justify-between my-4">
+                <div class="w-full max-w-4xl mx-auto">
+                    <div
+                        class="flex flex-col sm:flex-row sm:items-center sm:justify-between my-4 gap-3"
+                    >
                         <h2 class="text-xl font-bold">Votes à venir</h2>
                         <UButton
                             v-if="user!.role === 'admin'"
@@ -435,23 +436,23 @@ const runDelete = async () => {
                     </div>
                     <div
                         v-if="upcomingVotes.length"
-                        class="flex flex-wrap gap-4"
+                        class="grid grid-cols-1 md:grid-cols-2 gap-4"
                     >
                         <div
                             v-for="vote in upcomingVotes"
                             :key="vote.id"
-                            class="flex flex-col gap-2 basis-[calc(50%-0.5rem)]"
+                            class="flex flex-col gap-2"
                         >
                             <VoteCardUpcoming :vote="vote">
                                 <template #actions>
                                     <div
                                         v-if="user!.role === 'admin'"
-                                        class="flex gap-2"
+                                        class="flex flex-col sm:flex-row gap-2"
                                     >
                                         <UButton
                                             icon="mingcute:rocket-line"
                                             color="primary"
-                                            class="w-1/2 justify-center"
+                                            class="w-full sm:w-1/2 justify-center"
                                             :variant="
                                                 currentVote ? 'soft' : 'solid'
                                             "
@@ -469,7 +470,7 @@ const runDelete = async () => {
                                             icon="mingcute:delete-line"
                                             color="primary"
                                             variant="soft"
-                                            class="w-1/2 justify-center"
+                                            class="w-full sm:w-1/2 justify-center"
                                             :disabled="
                                                 isDeletingVote ||
                                                 vote.status !== 'INITIAL' ||
@@ -493,12 +494,12 @@ const runDelete = async () => {
                     <h2 class="text-xl mb-4 mt-12 font-bold">Votes terminés</h2>
                     <div
                         v-if="finishedVotes.length"
-                        class="flex flex-wrap gap-4"
+                        class="grid grid-cols-1 md:grid-cols-2 gap-4"
                     >
                         <div
                             v-for="vote in finishedVotes"
                             :key="vote.id"
-                            class="flex flex-col gap-2 basis-[calc(50%-0.5rem)]"
+                            class="flex flex-col gap-2"
                         >
                             <VoteCardSummary :vote="vote" />
                         </div>
@@ -519,10 +520,13 @@ const runDelete = async () => {
                         Confirmer la suppression de ce vote ?
                     </p>
                     <template #footer>
-                        <div class="flex justify-end gap-3">
+                        <div
+                            class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3"
+                        >
                             <UButton
                                 color="neutral"
                                 variant="ghost"
+                                class="w-full sm:w-auto"
                                 @click="cancelDelete"
                             >
                                 Annuler
@@ -530,6 +534,7 @@ const runDelete = async () => {
                             <UButton
                                 color="primary"
                                 variant="soft"
+                                class="w-full sm:w-auto"
                                 :loading="isDeletingVote"
                                 :disabled="isDeletingVote"
                                 @click="runDelete"

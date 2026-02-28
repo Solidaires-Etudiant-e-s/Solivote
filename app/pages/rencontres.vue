@@ -221,7 +221,7 @@ const reinit = async (id: number) => {
     }
 };
 
-const syndicat = ref([[]]);
+const syndicat = ref<string[][]>([]);
 </script>
 
 <template>
