@@ -1,10 +1,18 @@
 import { z } from "zod";
+import { prisma } from "../../utils/prisma";
+import { getUser, Groupe } from "../../utils/role";
+import { broadcastVote } from "../../utils/sse";
 
 const userSchema = z.object({
-  id: z.number(),
+  id: z.number().int(),
 });
 
 export default defineEventHandler(async (event) => {
+  const { role } = await getUser(event);
+  if (role !== Groupe.ADMIN) {
+    throw createError({ statusCode: 403, statusMessage: "forbidden" });
+  }
+
   const data = await readValidatedBody(event, (body) => userSchema.parse(body));
 
   const vote = await prisma.vote.findUnique({
@@ -27,9 +35,11 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  return prisma.vote.delete({
+  const result = await prisma.vote.delete({
     where: {
       id: data.id,
     },
   });
+  await broadcastVote("vote");
+  return result;
 });

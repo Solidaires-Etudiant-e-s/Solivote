@@ -1,0 +1,2 @@
+-- AlterTable
+ALTER TABLE `Rencontre` ADD COLUMN `nom` VARCHAR(191) NOT NULL DEFAULT '';

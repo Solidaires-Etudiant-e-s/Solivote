@@ -16,7 +16,7 @@ const schema = z
         nom: z.string().min(1),
         description: z.string().nullable(),
         possibilites: z.array(z.string().min(1)),
-        type: z.enum(TypeVote),
+        type: z.enum(Object.values(TypeVote)),
     })
     .refine((input) => {
         if (input.type != TypeVote.CONDORCET) {
@@ -37,12 +37,43 @@ const new_vote = reactive({
 });
 
 const toast = useToast();
+const { data: votesCache } = useNuxtData<Vote[]>("votes");
+const isCreatingVote = ref(false);
 async function onSubmit(event: FormSubmitEvent<Schema>) {
-    const result = await $fetch("/api/vote", {
-        method: "POST",
-        body: event.data,
-    });
-    if (result) {
+    if (isCreatingVote.value) return;
+
+    const previousVotes = structuredClone(votesCache.value ?? []);
+    const tempId = -Date.now();
+    const optimisticVote = {
+        id: tempId,
+        date: new Date(),
+        nom: event.data.nom,
+        type: event.data.type,
+        description: event.data.description,
+        content: "",
+        rencontreId: 0,
+        status: StatusVote.INITIAL,
+        choix: [],
+        possibilites:
+            event.data.type === TypeVote.CONDORCET
+                ? event.data.possibilites.map((nom, index) => ({
+                      id: tempId - index - 1,
+                      nom,
+                      voteId: tempId,
+                  }))
+                : [],
+        rencontre: {} as Vote["rencontre"],
+    } as Vote;
+
+    votesCache.value = [optimisticVote, ...(votesCache.value ?? [])];
+    isCreatingVote.value = true;
+    emit("update:open", false);
+
+    try {
+        const result = await $fetch("/api/vote", {
+            method: "POST",
+            body: event.data,
+        });
         toast.add({
             title: "Vote créé",
             description: result.nom,
@@ -51,14 +82,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
         new_vote.nom = "";
         new_vote.description = "";
         new_vote.possibilites = [];
-        emit("update:open", false);
         emit("created");
-    } else {
+    } catch {
+        votesCache.value = previousVotes;
+        emit("update:open", true);
         toast.add({
             title: "Création impossible",
             description: "Vérifiez les champs puis réessayez.",
             color: "error",
         });
+    } finally {
+        isCreatingVote.value = false;
     }
 }
 </script>
@@ -125,9 +159,14 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                             >
                                 Annuler
                             </UButton>
-                            <UButton type="submit" color="primary"
-                                >Créer le vote</UButton
+                            <UButton
+                                type="submit"
+                                color="primary"
+                                :loading="isCreatingVote"
+                                :disabled="isCreatingVote"
                             >
+                                Créer le vote
+                            </UButton>
                         </div>
                     </template>
                 </UCard>

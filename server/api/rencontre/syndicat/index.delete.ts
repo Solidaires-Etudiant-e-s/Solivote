@@ -1,14 +1,22 @@
 import { z } from "zod";
+import { prisma } from "../../../utils/prisma";
+import { getUser, Groupe } from "../../../utils/role";
+import { broadcastRencontre } from "../../../utils/sse";
 
 const userSchema = z.object({
-  id: z.number(),
-  syndicatID: z.number(),
+  id: z.number().int(),
+  syndicatID: z.number().int(),
 });
 
 export default defineEventHandler(async (event) => {
+  const { role } = await getUser(event);
+  if (role !== Groupe.ADMIN) {
+    throw createError({ statusCode: 403, statusMessage: "forbidden" });
+  }
+
   const data = await readValidatedBody(event, (body) => userSchema.parse(body));
 
-  return prisma.mandat.delete({
+  const result = await prisma.mandat.delete({
     where: {
       syndicatId_rencontreId: {
         syndicatId: data.syndicatID,
@@ -16,4 +24,6 @@ export default defineEventHandler(async (event) => {
       },
     },
   });
+  await broadcastRencontre("rencontre");
+  return result;
 });

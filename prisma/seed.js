@@ -141,11 +141,11 @@ async function main() {
         ? StatusVote.CLOTURE
         : isCurrent
           ? vIndex === 0
-            ? StatusVote.EN_VOTE
-            : vIndex <= 2
-              ? StatusVote.INITAL
-              : StatusVote.CLOTURE
-          : StatusVote.INITAL;
+              ? StatusVote.EN_VOTE
+              : vIndex <= 2
+                ? StatusVote.INITIAL
+                : StatusVote.CLOTURE
+          : StatusVote.INITIAL;
 
       const vote = await prisma.vote.create({
         data: {
@@ -153,6 +153,7 @@ async function main() {
           type: TypeVote.STANDARD,
           description:
             voteDescriptions[(rIndex + vIndex) % voteDescriptions.length],
+          content: voteContents[(rIndex + vIndex) % voteContents.length],
           rencontreId: rencontre.id,
           status,
         },
@@ -163,7 +164,7 @@ async function main() {
 
   const choixData = [];
   const votesWithChoices = votes.filter(
-    (vote) => vote.status !== StatusVote.INITAL,
+    (vote) => vote.status !== StatusVote.INITIAL,
   );
   const tieVoteIndex = Math.floor(votesWithChoices.length / 2);
   for (let vIndex = 0; vIndex < votesWithChoices.length; vIndex += 1) {

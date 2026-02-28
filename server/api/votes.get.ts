@@ -1,8 +1,11 @@
+import { prisma } from "../utils/prisma";
+import { sanitizeChoix } from "../utils/sanitizeChoix";
+
 export default defineEventHandler(async (_event) => {
   const current = await currentRencontre();
 
   if (!current) {
-    return prisma.vote.findMany({
+    const votes = await prisma.vote.findMany({
       include: {
         choix: {
           include: {
@@ -11,9 +14,17 @@ export default defineEventHandler(async (_event) => {
         },
       },
     });
+
+    return votes.map((vote) => ({
+      ...vote,
+      choix: vote.choix.map((choice) => ({
+        ...choice,
+        choix: sanitizeChoix(choice.choix),
+      })),
+    }));
   }
 
-  return prisma.vote.findMany({
+  const votes = await prisma.vote.findMany({
     where: {
       rencontre: {
         is: current,
@@ -25,9 +36,15 @@ export default defineEventHandler(async (_event) => {
           syndicat: true,
         },
       },
-      possibilites: {
-        include: true,
-      },
+      possibilites: true,
     },
   });
+
+  return votes.map((vote) => ({
+    ...vote,
+    choix: vote.choix.map((choice) => ({
+      ...choice,
+      choix: sanitizeChoix(choice.choix),
+    })),
+  }));
 });

@@ -1,4 +1,8 @@
-export async function currentSyndicat(event): Promise<
+import type { H3Event } from "h3";
+import { prisma } from "./prisma";
+import { currentRencontre } from "./currentRencontre";
+
+export async function currentSyndicat(event: H3Event): Promise<
     | ({
           mandats: {
               syndicatId: number;
@@ -11,7 +15,7 @@ export async function currentSyndicat(event): Promise<
       })
     | null
 > {
-    const nom = <string>event.node.req.headers["ynh_user"];
+    const nom = String(event.node.req.headers["ynh_user"] ?? "");
 
     const rencontre = await currentRencontre();
 

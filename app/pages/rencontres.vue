@@ -1,104 +1,236 @@
 <script setup lang="ts">
+import type { Ref } from "vue";
+
 const {
     data: rencontres,
     status: rencontreStatus,
-    execute: updateRencontres,
 } = useLazyFetch("/api/rencontre");
 const { data: user, status: userStatus } = await useLazyFetch("/api/role");
-watch(user, async () => {
-    await updateRencontresAndDetails();
-});
+const { sync } = usePatchedFetchState();
 
-const updateRencontresAndDetails = async () => {
-    await updateRencontres();
-    if (user.value?.role === "admin") {
-        details.value = await Promise.all(
-            rencontres.value!.map((i) =>
-                $fetch(`/api/rencontre/syndicat/${i.id}`),
-            ),
-        );
+const syncRencontresFromServer = async () => {
+    return sync(
+        rencontres as Ref<Rencontre[] | undefined>,
+        () => $fetch<Rencontre[]>("/api/rencontre"),
+        "byId",
+    );
+};
+
+const syncDetailsFromServer = async () => {
+    if (user.value?.role !== "admin" || !rencontres.value) return;
+    const nextDetails = await Promise.all(
+        rencontres.value.map((item) => $fetch<string[]>(`/api/rencontre/syndicat/${item.id}`)),
+    );
+    await sync(details, () => Promise.resolve(nextDetails), "array");
+};
+
+const updateRencontresAndDetails = async (forceDetails = false) => {
+    const changed = await syncRencontresFromServer();
+    if (forceDetails || changed || !details.value.length) {
+        await syncDetailsFromServer();
     }
 };
 
-const {
-    open,
-    send,
-    status: wsStatus,
-} = useWebSocket("/api/ws/rencontre", {
-    immediate: false,
-    async onMessage() {
-        await updateRencontresAndDetails();
-    },
-    autoReconnect: true,
+watch(user, async () => {
+    await updateRencontresAndDetails(true);
 });
+
+const wsStatus = ref("disconnected");
+let rencontreStream: EventSource | null = null;
+
+const connectRencontreStream = () => {
+    wsStatus.value = "connecting";
+    rencontreStream = new EventSource("/api/sse/rencontre");
+    rencontreStream.onopen = () => {
+        wsStatus.value = "connected";
+    };
+    rencontreStream.onerror = () => {
+        wsStatus.value = "disconnected";
+    };
+    rencontreStream.addEventListener("rencontre", async () => {
+        await updateRencontresAndDetails();
+    });
+};
 
 const details = ref<string[][]>([]);
 await updateRencontresAndDetails();
 onMounted(async () => {
-    open();
+    connectRencontreStream();
+});
+
+onBeforeUnmount(() => {
+    rencontreStream?.close();
 });
 
 const updateAll = async (self: boolean = true) => {
-    send("");
     if (self) {
-        await updateRencontresAndDetails();
+        await updateRencontresAndDetails(true);
     }
 };
 
 const toast = useToast();
+const isMutatingRencontre = ref(false);
+
+const cloneValue = <T>(value: T): T => structuredClone(value);
 
 async function onSyndicatAdd(index: number, id: number) {
-    const result = await $fetch("/api/rencontre/syndicat", {
-        method: "POST",
-        body: {
-            id,
-            syndicats: syndicat.value[index]?.map((s) => ({ nom: s })),
-        },
-    });
+    if (isMutatingRencontre.value) return;
 
-    if (result) {
+    const selected = [...(syndicat.value[index] ?? [])];
+    if (!selected.length) return;
+
+    const previousRencontres = cloneValue(rencontres.value ?? []);
+    const previousDetails = cloneValue(details.value);
+    const previousSyndicats = cloneValue(syndicat.value);
+    isMutatingRencontre.value = true;
+
+    const rencontre = rencontres.value?.find((item) => item.id === id);
+    if (rencontre) {
+        const existing = new Set(
+            (rencontre.mandats ?? []).map((mandat) => mandat.syndicat.nom),
+        );
+        let tempId = -Date.now();
+        for (const nom of selected) {
+            if (existing.has(nom)) continue;
+            rencontre.mandats.push({
+                syndicatId: tempId,
+                rencontreId: id,
+                syndicat: { id: tempId, nom },
+                mandat: 1,
+            });
+            tempId -= 1;
+        }
+    }
+    if (details.value[index]) {
+        details.value[index] = details.value[index].filter(
+            (name) => !selected.includes(name),
+        );
+    }
+    syndicat.value[index] = [];
+
+    try {
+        await $fetch("/api/rencontre/syndicat", {
+            method: "POST",
+            body: {
+                id,
+                syndicats: selected.map((s) => ({ nom: s })),
+            },
+        });
         toast.add({
             title: "Syndicats ajoutés",
             description: "Les syndicats ont été associés à la rencontre.",
             color: "success",
         });
-        syndicat.value[index] = [];
-        await updateAll();
-    } else {
+        await updateRencontresAndDetails(true);
+    } catch {
+        rencontres.value = previousRencontres;
+        details.value = previousDetails;
+        syndicat.value = previousSyndicats;
         toast.add({
             title: "Ajout impossible",
             description: "Veuillez vérifier la sélection et réessayer.",
             color: "error",
         });
+    } finally {
+        isMutatingRencontre.value = false;
     }
 }
 
 const launch = async (id: number) => {
-    await $fetch(`/api/rencontre/start/${id}`);
-    updateAll();
+    if (isMutatingRencontre.value) return;
+    const previousRencontres = cloneValue(rencontres.value ?? []);
+    isMutatingRencontre.value = true;
+
+    if (rencontres.value) {
+        rencontres.value = rencontres.value.map((rencontre) => ({
+            ...rencontre,
+            status:
+                rencontre.id === id ? StatusRencontre.DEMARE : rencontre.status,
+        }));
+    }
+
+    try {
+        await $fetch(`/api/rencontre/start/${id}`, { method: "POST" });
+    } catch {
+        rencontres.value = previousRencontres;
+        toast.add({
+            title: "Démarrage impossible",
+            description: "La rencontre n'a pas pu être démarrée.",
+            color: "error",
+        });
+    } finally {
+        isMutatingRencontre.value = false;
+    }
 };
 
 const stop = async () => {
-    await $fetch(`/api/rencontre/stop`);
-    updateAll();
+    if (isMutatingRencontre.value) return;
+    const previousRencontres = cloneValue(rencontres.value ?? []);
+    isMutatingRencontre.value = true;
+
+    if (rencontres.value) {
+        rencontres.value = rencontres.value.map((rencontre) => ({
+            ...rencontre,
+            status:
+                rencontre.status === StatusRencontre.DEMARE
+                    ? StatusRencontre.CLOTURE
+                    : rencontre.status,
+        }));
+    }
+
+    try {
+        await $fetch(`/api/rencontre/stop`, { method: "POST" });
+    } catch {
+        rencontres.value = previousRencontres;
+        toast.add({
+            title: "Clôture impossible",
+            description: "La rencontre n'a pas pu être clôturée.",
+            color: "error",
+        });
+    } finally {
+        isMutatingRencontre.value = false;
+    }
 };
 
 const reinit = async (id: number) => {
-    await $fetch(`/api/rencontre/reinit/${id}`);
-    updateAll();
+    if (isMutatingRencontre.value) return;
+    const previousRencontres = cloneValue(rencontres.value ?? []);
+    isMutatingRencontre.value = true;
+
+    if (rencontres.value) {
+        rencontres.value = rencontres.value.map((rencontre) => ({
+            ...rencontre,
+            status:
+                rencontre.id === id
+                    ? StatusRencontre.INITIAL
+                    : rencontre.status,
+        }));
+    }
+
+    try {
+        await $fetch(`/api/rencontre/reinit/${id}`, { method: "POST" });
+    } catch {
+        rencontres.value = previousRencontres;
+        toast.add({
+            title: "Réinitialisation impossible",
+            description: "La rencontre n'a pas pu être réinitialisée.",
+            color: "error",
+        });
+    } finally {
+        isMutatingRencontre.value = false;
+    }
 };
 
 const syndicat = ref([[]]);
 </script>
 
 <template>
-    <NuxtLayout name="default">
-        <AppHeader
+    <AppHeader
             title="Rencontres"
             :user="user"
             :status="userStatus"
-            :ws-status="wsStatus"
-        />
+            :sse-status="wsStatus"
+    />
 
         <div
             v-if="rencontreStatus === 'success' && userStatus === 'success'"
@@ -143,6 +275,8 @@ const syndicat = ref([[]]);
                                 icon="mingcute:add-square-line"
                                 color="success"
                                 variant="solid"
+                                :loading="isMutatingRencontre"
+                                :disabled="isMutatingRencontre"
                             />
                         </UForm>
 
@@ -151,6 +285,8 @@ const syndicat = ref([[]]);
                             icon="mingcute:rocket-line"
                             color="success"
                             variant="solid"
+                            :loading="isMutatingRencontre"
+                            :disabled="isMutatingRencontre"
                             @click.prevent="launch(rencontre.id)"
                         >
                             Démarrer la rencontre
@@ -160,6 +296,8 @@ const syndicat = ref([[]]);
                             icon="mingcute:alert-octagon-line"
                             color="error"
                             variant="solid"
+                            :loading="isMutatingRencontre"
+                            :disabled="isMutatingRencontre"
                             @click.prevent="stop()"
                         >
                             Clôturer la rencontre
@@ -169,6 +307,8 @@ const syndicat = ref([[]]);
                             icon="mingcute:refresh-2-line"
                             color="warning"
                             variant="solid"
+                            :loading="isMutatingRencontre"
+                            :disabled="isMutatingRencontre"
                             @click.prevent="reinit(rencontre.id)"
                         >
                             Réinitialiser la rencontre
@@ -177,7 +317,6 @@ const syndicat = ref([[]]);
                 </RencontreCard>
             </template>
         </div>
-    </NuxtLayout>
 </template>
 
 <style scoped></style>

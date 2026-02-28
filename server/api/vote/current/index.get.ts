@@ -1,7 +1,9 @@
 import { StatusVote } from "@prisma/client";
+import { prisma } from "../../../utils/prisma";
+import { sanitizeChoix } from "../../../utils/sanitizeChoix";
 
 export default defineEventHandler(async () => {
-    return prisma.vote.findFirst({
+    const vote = await prisma.vote.findFirst({
         where: {
             status: StatusVote.EN_VOTE,
         },
@@ -14,4 +16,14 @@ export default defineEventHandler(async () => {
             possibilites: true,
         },
     });
+
+    if (!vote) return null;
+
+    return {
+        ...vote,
+        choix: vote.choix.map((choice) => ({
+            ...choice,
+            choix: sanitizeChoix(choice.choix),
+        })),
+    };
 });

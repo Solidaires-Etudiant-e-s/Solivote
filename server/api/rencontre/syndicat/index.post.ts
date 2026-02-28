@@ -1,4 +1,7 @@
 import { z } from "zod";
+import { prisma } from "../../../utils/prisma";
+import { getUser, Groupe } from "../../../utils/role";
+import { broadcastRencontre } from "../../../utils/sse";
 
 const syndicatsSchema = z.object({
   id: z.number(),
@@ -11,25 +14,47 @@ const syndicatsSchema = z.object({
 
 export default defineEventHandler(async (event) => {
   const { role } = await getUser(event);
-  if (role !== "admin")
+  if (role !== Groupe.ADMIN) {
     throw createError({ statusCode: 403, statusMessage: "forbidden" });
+  }
 
   const data = await readValidatedBody(event, (body) =>
     syndicatsSchema.parse(body),
   );
 
-  return await Promise.all(
-    data.syndicats.map(async ({ nom }) => {
-      const syndicat = await prisma.syndicat.findUnique({ where: { nom } });
-      if (!syndicat) {
-        throw new Error(`Syndicat ${nom} not found`);
-      }
-      return prisma.mandat.create({
+  const syndicats = await prisma.syndicat.findMany({
+    where: {
+      nom: {
+        in: data.syndicats.map((syndicat) => syndicat.nom),
+      },
+    },
+    select: {
+      id: true,
+      nom: true,
+    },
+  });
+
+  const byName = new Map(syndicats.map((syndicat) => [syndicat.nom, syndicat]));
+  const missing = data.syndicats.filter(
+    (syndicat) => !byName.has(syndicat.nom),
+  );
+  if (missing.length) {
+    throw createError({
+      statusCode: 404,
+      statusMessage: `Syndicat ${missing[0]?.nom ?? "unknown"} not found`,
+    });
+  }
+
+  const result = await Promise.all(
+    data.syndicats.map((syndicat) =>
+      prisma.mandat.create({
         data: {
-          syndicatId: syndicat.id,
+          syndicatId: byName.get(syndicat.nom)!.id,
           rencontreId: data.id,
         },
-      });
-    }),
+      }),
+    ),
   );
+  await broadcastRencontre("rencontre");
+  return result;
 });

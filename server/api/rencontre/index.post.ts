@@ -1,5 +1,8 @@
 import { z } from "zod";
 import { TypeRencontre } from "@prisma/client";
+import { prisma } from "../../utils/prisma";
+import { getUser, Groupe } from "../../utils/role";
+import { broadcastRencontre } from "../../utils/sse";
 
 const userSchema = z.object({
   nom: z.string().min(1).optional(),
@@ -9,9 +12,14 @@ const userSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
+  const { role } = await getUser(event);
+  if (role !== Groupe.ADMIN) {
+    throw createError({ statusCode: 403, statusMessage: "forbidden" });
+  }
+
   const data = await readValidatedBody(event, (body) => userSchema.parse(body));
 
-  return prisma.rencontre.create({
+  const result = await prisma.rencontre.create({
     data: {
       nom: data.nom,
       type: data.type,
@@ -19,4 +27,6 @@ export default defineEventHandler(async (event) => {
       dateFin: data.dateFin,
     },
   });
+  await broadcastRencontre("rencontre");
+  return result;
 });

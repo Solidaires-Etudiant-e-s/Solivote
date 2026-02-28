@@ -15,11 +15,57 @@ const props = defineProps<{
 }>();
 
 const { data: syndicats } = await useLazyFetch("/api/syndicat");
+const { data: votesCache } = useNuxtData<Vote[]>("votes");
+const { data: currentVoteCache } = useNuxtData<VoteLike | null>("vote-current");
 const syndicatCount = computed(() => syndicats.value?.length ?? 0);
+const isStoppingVote = ref(false);
+const optimisticallyStopped = ref(false);
+const displayCurrentVote = computed(() =>
+    optimisticallyStopped.value ? null : props.currentVote,
+);
+const remainingCount = computed(() => {
+    const current = displayCurrentVote.value;
+    if (!current) return syndicatCount.value;
+    return syndicatCount.value - current.choix.length;
+});
+
+watch(
+    () => props.currentVote?.id,
+    (id) => {
+        if (id != null) {
+            optimisticallyStopped.value = false;
+        }
+    },
+);
 
 const stop = async () => {
-    await $fetch(`/api/vote/stop`);
-    await props.execute();
+    if (isStoppingVote.value) return;
+    const previousVotes = structuredClone(votesCache.value ?? []);
+    const previousCurrentVote = structuredClone(currentVoteCache.value);
+    const previousOptimisticState = optimisticallyStopped.value;
+    isStoppingVote.value = true;
+    optimisticallyStopped.value = true;
+
+    if (props.currentVote && votesCache.value) {
+        votesCache.value = votesCache.value.map((vote) => ({
+            ...vote,
+            status:
+                vote.id === props.currentVote!.id
+                    ? StatusVote.CLOTURE
+                    : vote.status,
+        }));
+    }
+    currentVoteCache.value = null;
+
+    try {
+        await $fetch(`/api/vote/stop`, { method: "POST" });
+    } catch {
+        votesCache.value = previousVotes;
+        currentVoteCache.value = previousCurrentVote;
+        optimisticallyStopped.value = previousOptimisticState;
+    } finally {
+        isStoppingVote.value = false;
+    }
 };
 
 type Panache = Record<string, number>;
@@ -33,8 +79,8 @@ const emit = defineEmits<{
 <template>
     <div class="flex justify-center">
         <VoteCardLive
-            v-if="props.currentVoteStatus === 'success' && props.currentVote"
-            :vote="props.currentVote"
+            v-if="props.currentVoteStatus === 'success' && displayCurrentVote"
+            :vote="displayCurrentVote"
             :user="props.user"
             @vote="(type, selected) => emit('vote', type, selected)"
             @panacher="
@@ -45,15 +91,12 @@ const emit = defineEmits<{
                 <UButton
                     icon="mingcute:choice-line"
                     color="primary"
+                    :loading="isStoppingVote"
+                    :disabled="isStoppingVote"
                     @click.prevent="stop()"
                 >
-                    Clôturer ({{
-                        syndicatCount - props.currentVote.choix.length
-                    }}
-                    restant{{
-                        syndicatCount - props.currentVote.choix.length === 1
-                            ? ""
-                            : "s"
+                    Clôturer ({{ remainingCount }} restant{{
+                        remainingCount === 1 ? "" : "s"
                     }})
                 </UButton>
             </template>

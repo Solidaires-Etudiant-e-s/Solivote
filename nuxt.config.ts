@@ -1,7 +1,7 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   compatibilityDate: "2025-07-15",
-  devtools: { enabled: true },
+  devtools: { enabled: process.env.NODE_ENV !== "production" },
 
   i18n: {
     locales: [
@@ -9,12 +9,6 @@ export default defineNuxtConfig({
       { code: "fr", file: "fr.json" },
     ],
     defaultLocale: "fr",
-  },
-
-  nitro: {
-    experimental: {
-      websocket: true,
-    },
   },
 
   modules: [

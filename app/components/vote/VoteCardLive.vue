@@ -6,13 +6,23 @@ type Possibilite = {
     nom: string;
 };
 
+type SyndicatWithMandats = {
+    id: number;
+    nom: string;
+    mandats: Array<{ mandat: number; rencontreId?: number }>;
+};
+
 type VoteLike = {
     id: number;
+    rencontreId: number;
     nom: string;
     description?: string;
     type: TypeVote;
     possibilites: Possibilite[];
-    choix: Choix[];
+    choix: Array<{
+        syndicat: Syndicat;
+        choix: Array<{ type: string | number; mandat: number }>;
+    }>;
     status: string;
 };
 
@@ -31,7 +41,9 @@ const { data: syndicats, status: syndicatsStatus } = await useLazyFetch(
 );
 
 const syndicatsName = computed(() => {
-    const s = syndicats.value!.map((e) => e.nom);
+    const s = (syndicats.value as SyndicatWithMandats[] | null)?.map(
+        (e) => e.nom,
+    ) ?? [];
     return s;
 });
 
@@ -80,17 +92,63 @@ type Panache = Record<string, number>;
 
 const en_panachage = ref(false);
 const panachage = ref({} as Panache);
+const selectedUnionName = computed(() =>
+    props.user?.role === "syndicat" ? props.user?.name ?? "" : vote_pour.value,
+);
+const selectedChoiceKey = computed(() => {
+    const name = selectedUnionName.value.trim().toLowerCase();
+    if (!name) return null;
+
+    const voteChoice = props.vote.choix.find(
+        (choice) => choice.syndicat?.nom?.toLowerCase() === name,
+    );
+    if (!voteChoice) return null;
+
+    const positive = voteChoice.choix.filter(
+        (entry) => Number(entry.mandat) > 0,
+    );
+    if (positive.length !== 1) return null;
+
+    return String(positive[0]!.type);
+});
+const availableMandats = computed(() => {
+    const name = selectedUnionName.value.trim().toLowerCase();
+    if (!name) return 0;
+    const list = (syndicats.value as SyndicatWithMandats[] | null) ?? [];
+    const found = list.find((item) => item.nom.toLowerCase() === name);
+    if (!found) return 0;
+    const forCurrentRencontre = found.mandats.filter(
+        (m) => m.rencontreId === props.vote.rencontreId,
+    );
+    return forCurrentRencontre.reduce((sum, m) => sum + (m.mandat ?? 0), 0);
+});
 
 const totalVotes = computed(() => {
     let total = 0;
     for (const i of props.vote.choix) {
         for (const y of i.choix) {
-            total += y!.mandat;
+            const mandat = Number(y?.mandat ?? 0);
+            total += Number.isFinite(mandat) ? mandat : 0;
         }
     }
 
     return total;
 });
+
+const percentFor = (key: string | number) => {
+    const count = Number(groupCount(key as unknown as string | number, choiceGroups.value));
+    const total = Number(totalVotes.value);
+
+    if (!Number.isFinite(count) || !Number.isFinite(total)) {
+        return 0;
+    }
+
+    if (total <= 0) {
+        return 0;
+    }
+
+    return Math.round((count / total) * 100);
+};
 
 // const userChoice = computed(() => {
 //   let userName = "";
@@ -111,6 +169,11 @@ const totalVotes = computed(() => {
 // });
 
 const vote_pour = ref("");
+
+watch(vote_pour, () => {
+    en_panachage.value = false;
+    panachage.value = {};
+});
 </script>
 
 <template>
@@ -150,14 +213,18 @@ const vote_pour = ref("");
                 "
                 class="flex items-center gap-x-4"
             >
-                voter pour:
+                Voter à la place de :
                 <UInputMenu v-model="vote_pour" :items="syndicatsName" />
             </div>
             <div
                 v-if="props.user?.role === 'syndicat' || vote_pour"
                 class="flex items-center gap-x-4"
             >
-                <span>Panachage</span>
+                <span
+                    >Panachage ({{ availableMandats }} mandat{{
+                        availableMandats > 1 ? "s" : ""
+                    }})</span
+                >
                 <USwitch v-model="en_panachage" />
             </div>
             <div
@@ -167,15 +234,28 @@ const vote_pour = ref("");
             >
                 <div class="flex items-center gap-3">
                     <label
-                        class="w-28 shrink-0 flex items-center gap-2 text-sm font-semibold"
+                        class="shrink-0 flex items-center gap-2 text-sm font-semibold"
                     >
                         <template
                             v-if="props.user?.role === 'syndicat' || vote_pour"
                         >
                             <UButton
                                 v-if="!en_panachage"
-                                icon="mingcute:check-fill"
-                                color="primary"
+                                :icon="
+                                    selectedChoiceKey === String(group.key)
+                                        ? 'mingcute:check-fill'
+                                        : 'mingcute:square-line'
+                                "
+                                :color="
+                                    selectedChoiceKey === String(group.key)
+                                        ? 'primary'
+                                        : 'neutral'
+                                "
+                                :variant="
+                                    selectedChoiceKey === String(group.key)
+                                        ? 'solid'
+                                        : 'outline'
+                                "
                                 @click="emit('vote', group.key, vote_pour)"
                             />
                             <template v-else>
@@ -183,6 +263,7 @@ const vote_pour = ref("");
                                     v-model="panachage[group.key]"
                                     :min="0"
                                     :default-value="0"
+                                    class="w-24"
                                 />
                             </template>
                         </template>
@@ -194,36 +275,24 @@ const vote_pour = ref("");
                         <div
                             class="h-full transition-[width] duration-500 ease-out"
                             :class="
-                                groupPercent(
-                                    group.key,
-                                    totalVotes,
-                                    choiceGroups,
-                                ) > 0
+                                percentFor(group.key) > 0
                                     ? 'bg-primary'
                                     : 'bg-secondary'
                             "
                             :style="{
-                                width: `${groupPercent(group.key, totalVotes, choiceGroups)}%`,
+                                width: `${percentFor(group.key)}%`,
                             }"
                         />
                         <div
                             class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
                             :class="
-                                groupPercent(
-                                    group.key,
-                                    totalVotes,
-                                    choiceGroups,
-                                ) === 0
+                                percentFor(group.key) === 0
                                     ? 'text-muted'
                                     : 'text-white'
                             "
                         >
                             {{ groupCount(group.key, choiceGroups) }} ({{
-                                groupPercent(
-                                    group.key,
-                                    totalVotes,
-                                    choiceGroups,
-                                )
+                                percentFor(group.key)
                             }}%)
                         </div>
                     </div>

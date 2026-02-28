@@ -12,11 +12,12 @@ model Vote {
   nom          String
   type         TypeVote
   description  String?       @db.Text
+  content      String        @default("") @db.Text
   choix        Choix[]
   possibilites Possibilite[]
   rencontre    Rencontre     @relation(fields: [rencontreId], references: [id])
   rencontreId  Int
-  status       StatusVote    @default(INITAL)
+  status       StatusVote    @default(INITIAL)
 }
 
 model Possibilite {
@@ -75,7 +76,7 @@ enum TypeChoix {
 }
 
 enum StatusVote {
-  INITAL
+  INITIAL
   EN_VOTE
   CLOTURE
 }

@@ -1,42 +1,52 @@
-import type { Possibilite } from "@prisma/client";
+export const TypeRencontre = {
+  CONGRES: "CONGRES",
+  CF: "CF",
+  BF: "BF",
+  PU: "PU",
+} as const;
+export type TypeRencontre = (typeof TypeRencontre)[keyof typeof TypeRencontre];
 
-export enum TypeRencontre {
-  CONGRES = "CONGRES",
-  CF = "CF",
-  BF = "BF",
-  PU = "PU",
-}
+export const TypeChoix = {
+  POUR: "POUR",
+  CONTRE: "CONTRE",
+  ABSTENTION: "ABSTENTION",
+  NPPV: "NPPV",
+} as const;
+export type TypeChoix = (typeof TypeChoix)[keyof typeof TypeChoix];
 
-export enum TypeChoix {
-  POUR = "POUR",
-  CONTRE = "CONTRE",
-  ABSTENTION = "ABSTENTION",
-  NPPV = "NPPV",
-}
+export const TypeVote = {
+  STANDARD: "STANDARD",
+  EN_CONTRE: "EN_CONTRE",
+  CONDORCET: "CONDORCET",
+} as const;
+export type TypeVote = (typeof TypeVote)[keyof typeof TypeVote];
 
-export enum TypeVote {
-  STANDARD = "STANDARD",
-  EN_CONTRE = "EN_CONTRE",
-  CONDORCET = "CONDORCET",
-}
+export const StatusRencontre = {
+  INITIAL: "INITIAL",
+  DEMARE: "DEMARE",
+  CLOTURE: "CLOTURE",
+} as const;
+export type StatusRencontre =
+  (typeof StatusRencontre)[keyof typeof StatusRencontre];
 
-export enum StatusRencontre {
-  INITIAL = "INITIAL",
-  DEMARE = "DEMARE",
-  CLOTURE = "CLOTURE",
-}
+export const StatusVote = {
+  INITIAL: "INITIAL",
+  EN_VOTE: "EN_VOTE",
+  CLOTURE: "CLOTURE",
+} as const;
+export type StatusVote = (typeof StatusVote)[keyof typeof StatusVote];
 
-export enum StatusVote {
-  INITAL = "INITAL",
-  EN_VOTE = "EN_VOTE",
-  CLOTURE = "CLOTURE",
-}
+export type Possibilite = {
+  id: number;
+  nom: string;
+  voteId: number;
+};
 
 export type Vote = {
   id: number;
   date: Date;
   nom: string;
-  type: string;
+  type: TypeVote;
   description: string;
   rencontreId: number;
   status: StatusVote;
@@ -50,7 +60,7 @@ export type Choix = {
   date: Date;
   syndicat: Syndicat;
   vote: Vote;
-  choix: any[]; //json
+  choix: Array<{ type: string | number; mandat: number }>;
 };
 
 export type Syndicat = {
@@ -59,6 +69,8 @@ export type Syndicat = {
 };
 
 export type Mandat = {
+  syndicatId: number;
+  rencontreId: number;
   syndicat: Syndicat;
   rencontre: Rencontre;
   mandat: number;
@@ -73,11 +85,4 @@ export type Rencontre = {
   status: StatusRencontre;
   mandats: Mandat[];
   votes: Vote[];
-};
-
-export type possibilite = {
-  id: number;
-  nom: string;
-  vote: Vote;
-  voteId: number;
 };

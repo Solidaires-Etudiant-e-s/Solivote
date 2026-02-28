@@ -1,7 +1,7 @@
 <script setup lang="ts">
 type VoteChoice = {
     date: Date | string;
-    choix: TypeChoix;
+    choix: Array<{ type: string | number; mandat: number }>;
     syndicat?: { nom?: string } | null;
     [key: string]: unknown;
 };
@@ -12,30 +12,13 @@ type VoteLike = {
     type: TypeVote;
     description?: string;
     choix: VoteChoice[];
+    possibilites?: Array<{ id: number; nom: string }>;
     status: string;
 };
 
 const props = defineProps<{
     vote: VoteLike;
 }>();
-
-const choiceGroups = computed(() => {
-    const base = {
-        POUR: [] as VoteChoice[],
-        CONTRE: [] as VoteChoice[],
-        ABSTENTION: [] as VoteChoice[],
-        NPPV: [] as VoteChoice[],
-    };
-
-    for (const choix of props.vote.choix || []) {
-        const key = choix.choix;
-        if (key in base) {
-            base[key].push(choix);
-        }
-    }
-
-    return base;
-});
 
 const choiceMeta = [
     { key: "POUR", label: "Pour" },
@@ -44,9 +27,32 @@ const choiceMeta = [
     { key: "NPPV", label: "NPPV" },
 ];
 
-const totalVotes = computed(() => props.vote.choix?.length || 0);
+const choiceTotals = computed<Record<TypeChoix, number>>(() => {
+    const base: Record<TypeChoix, number> = {
+        POUR: 0,
+        CONTRE: 0,
+        ABSTENTION: 0,
+        NPPV: 0,
+    };
 
-const groupCount = (key: TypeChoix) => choiceGroups.value[key]?.length || 0;
+    for (const choix of props.vote.choix || []) {
+        for (const entry of choix.choix) {
+            const type = String(entry.type);
+            const mandat = Number(entry.mandat ?? 0);
+            if (type in base && Number.isFinite(mandat) && mandat > 0) {
+                base[type as TypeChoix] += mandat;
+            }
+        }
+    }
+
+    return base;
+});
+
+const totalVotes = computed(() =>
+    Object.values(choiceTotals.value).reduce((sum, count) => sum + count, 0),
+);
+
+const groupCount = (key: TypeChoix) => choiceTotals.value[key] || 0;
 
 const groupPercent = (key: TypeChoix) => {
     const total = totalVotes.value;

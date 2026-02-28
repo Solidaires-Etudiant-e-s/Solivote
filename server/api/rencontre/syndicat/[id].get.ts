@@ -1,31 +1,35 @@
+import { prisma } from "../../../utils/prisma";
+
 export default defineEventHandler(async (event) => {
   const id = Number.parseInt(<string>getRouterParam(event, "id"));
+  if (Number.isNaN(id)) {
+    throw createError({ statusCode: 400, statusMessage: "invalid id" });
+  }
 
-  const presents = (
-    await prisma.rencontre.findUniqueOrThrow({
-      where: {
-        id,
-      },
-      select: {
-        mandats: {
-          include: {
-            syndicat: true,
-          },
-        },
-      },
-    })
-  ).mandats.map((a) => a.syndicat.nom);
+  const mandats = await prisma.mandat.findMany({
+    where: {
+      rencontreId: id,
+    },
+    select: {
+      syndicatId: true,
+    },
+  });
 
-  return (
-    await prisma.syndicat.findMany({
-      select: {
-        nom: true,
+  const presentIds = mandats.map((mandat) => mandat.syndicatId);
+
+  const syndicats = await prisma.syndicat.findMany({
+    where: {
+      id: {
+        notIn: presentIds.length ? presentIds : undefined,
       },
-      orderBy: {
-        nom: "asc",
-      },
-    })
-  )
-    .map((a) => a.nom)
-    .filter((a) => !presents.includes(a));
+    },
+    select: {
+      nom: true,
+    },
+    orderBy: {
+      nom: "asc",
+    },
+  });
+
+  return syndicats.map((syndicat) => syndicat.nom);
 });
