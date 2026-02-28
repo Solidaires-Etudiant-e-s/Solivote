@@ -1,5 +1,5 @@
 <script setup lang="ts">
-import type { Ref } from "vue";
+import { toRaw, type Ref } from "vue";
 
 const {
     data: rencontres,
@@ -71,7 +71,9 @@ const updateAll = async (self: boolean = true) => {
 const toast = useToast();
 const isMutatingRencontre = ref(false);
 
-const cloneValue = <T>(value: T): T => structuredClone(value);
+function cloneValue<T>(value: T): T {
+    return structuredClone(toRaw(value));
+}
 
 async function onSyndicatAdd(index: number, id: number) {
     if (isMutatingRencontre.value) return;
@@ -80,8 +82,12 @@ async function onSyndicatAdd(index: number, id: number) {
     if (!selected.length) return;
 
     const previousRencontres = cloneValue(rencontres.value ?? []);
-    const previousDetails = cloneValue(details.value);
-    const previousSyndicats = cloneValue(syndicat.value);
+    const previousDetailsAtIndex = details.value[index]
+        ? [...details.value[index]]
+        : undefined;
+    const previousSyndicatsAtIndex = syndicat.value[index]
+        ? [...syndicat.value[index]]
+        : undefined;
     isMutatingRencontre.value = true;
 
     const rencontre = rencontres.value?.find((item) => item.id === id);
@@ -124,8 +130,8 @@ async function onSyndicatAdd(index: number, id: number) {
         await updateRencontresAndDetails(true);
     } catch {
         rencontres.value = previousRencontres;
-        details.value = previousDetails;
-        syndicat.value = previousSyndicats;
+        details.value[index] = previousDetailsAtIndex ?? [];
+        syndicat.value[index] = previousSyndicatsAtIndex ?? [];
         toast.add({
             title: "Ajout impossible",
             description: "Veuillez vérifier la sélection et réessayer.",
