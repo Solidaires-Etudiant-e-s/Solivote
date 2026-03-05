@@ -42,9 +42,9 @@ const { data: syndicats, status: syndicatsStatus } = await useLazyFetch(
 );
 
 const syndicatsName = computed(() => {
-    const s = (syndicats.value as SyndicatWithMandats[] | null)?.map(
-        (e) => e.nom,
-    ) ?? [];
+    const s =
+        (syndicats.value as SyndicatWithMandats[] | null)?.map((e) => e.nom) ??
+        [];
     return s;
 });
 
@@ -93,8 +93,17 @@ type Panache = Record<string, number>;
 
 const en_panachage = ref(false);
 const panachage = ref({} as Panache);
+const sum_panachage = computed(() => {
+    let sum = 0;
+    for (const i in panachage.value) {
+        sum += panachage.value[i]!;
+    }
+    return sum;
+});
 const selectedUnionName = computed(() =>
-    props.user?.role === "syndicat" ? props.user?.name ?? "" : vote_pour.value,
+    props.user?.role === "syndicat"
+        ? (props.user?.name ?? "")
+        : vote_pour.value,
 );
 const selectedChoiceKey = computed(() => {
     const name = selectedUnionName.value.trim().toLowerCase();
@@ -265,6 +274,11 @@ watch(vote_pour, () => {
                             v-else
                             v-model="panachage[group.key]"
                             :min="0"
+                            :max="
+                                (panachage[group.key] ?? 0) +
+                                availableMandats -
+                                sum_panachage
+                            "
                             :default-value="0"
                             class="w-20 sm:w-24"
                         />
@@ -295,13 +309,17 @@ watch(vote_pour, () => {
                                         : 'text-white'
                                 "
                             >
-                                {{ groupCount(String(group.key), choiceGroups) }} ({{
-                                    percentFor(group.key)
-                                }}%)
+                                {{
+                                    groupCount(String(group.key), choiceGroups)
+                                }}
+                                ({{ percentFor(group.key) }}%)
                             </div>
                         </div>
                         <div class="text-xs text-muted">
-                            {{ groupNames(String(group.key), choiceGroups) || "—" }}
+                            {{
+                                groupNames(String(group.key), choiceGroups) ||
+                                "—"
+                            }}
                         </div>
                     </div>
                 </div>
@@ -309,9 +327,13 @@ watch(vote_pour, () => {
             <UButton
                 v-if="en_panachage"
                 class="w-full sm:w-auto"
+                :disabled="sum_panachage !== availableMandats"
                 @click="emit('panacher', panachage, vote_pour)"
             >
                 Panacher !
+                <template v-if="sum_panachage !== availableMandats">
+                    manque {{ availableMandats - sum_panachage }} mandats
+                </template>
             </UButton>
             <div
                 v-if="$slots.actions"
