@@ -53,22 +53,30 @@ const totalVotes = computed(() =>
     Object.values(choiceTotals.value).reduce((sum, count) => sum + count, 0),
 );
 
-const groupCount = (key: TypeChoix) => choiceTotals.value[key] || 0;
+const choiceGroups = computed(() => {
+    const base: Record<
+        string,
+        Array<{ syndicat: Syndicat; mandat: number }>
+    > = {};
 
-const groupPercent = (key: TypeChoix) => {
-    const total = totalVotes.value;
-    if (total === 0) {
-        return 0;
+    for (const i of props.vote.choix) {
+        for (const y of i.choix) {
+            if (!base[y.type]) {
+                base[y.type] = [];
+            }
+            base[y.type]!.push({ syndicat: i.syndicat, mandat: y.mandat });
+        }
     }
-    return Math.round((groupCount(key) / total) * 100);
-};
+
+    return base;
+});
 
 const winnerKeys = computed(() => {
     let max = -1;
     const keys: TypeChoix[] = [];
 
     for (const option of choiceMeta) {
-        const count = groupCount(option.key);
+        const count = groupCount(option.key, choiceGroups.value);
         if (count > max) {
             max = count;
             keys.length = 0;
@@ -97,7 +105,11 @@ const winnerPercent = computed(() => {
     if (winnerKeys.value.length === 0) {
         return 0;
     }
-    return Math.max(...winnerKeys.value.map((key) => groupPercent(key)));
+    return Math.max(
+        ...winnerKeys.value.map((key) =>
+            groupPercent(key, totalVotes.value, choiceGroups.value),
+        ),
+    );
 });
 </script>
 
@@ -131,38 +143,78 @@ const winnerPercent = computed(() => {
             </div>
         </template>
 
-        <div class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-3">
-            <div class="w-full sm:w-28 shrink-0 text-sm font-semibold">
-                {{ winnerLabel }}
-            </div>
-            <div
-                class="relative h-6 w-full rounded-sm bg-secondary-200 overflow-hidden"
-            >
-                <div
-                    class="h-full transition-[width] duration-500 ease-out bg-primary"
-                    :style="{ width: `${winnerPercent}%` }"
-                />
-                <div
-                    class="absolute inset-0 flex items-center justify-start pl-2 text-[11px] font-semibold text-white"
-                >
-                    {{ winnerPercent }}%
-                </div>
-            </div>
+        <div class="flex justify-center">
+            <UBadge>{{ winnerLabel }} ({{ winnerPercent }}%)</UBadge>
         </div>
 
-        <div class="mt-3 flex flex-wrap gap-3 text-xs text-muted">
-            <span
-                v-for="group in choiceMeta"
-                :key="group.key"
-                class="inline-flex items-center gap-1"
-            >
-                <span class="font-semibold">{{ group.label }}:</span>
-                <span
-                    >{{ groupCount(group.key) }} ({{
-                        groupPercent(group.key)
-                    }}%)</span
-                >
-            </span>
+        <USeparator class="mt-6" />
+
+        <div
+            v-for="group in choiceMeta"
+            :key="group.key"
+            class="flex flex-col gap-2"
+        >
+            <div class="flex items-start gap-3">
+                <div class="shrink-0 self-center flex items-center w-full">
+                    <div class="flex-1 min-w-0 flex flex-col gap-1.5">
+                        <span class="text-sm font-medium sm:font-normal">{{
+                            group.label
+                        }}</span>
+                        <div
+                            class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden"
+                        >
+                            <div
+                                class="h-full transition-[width] duration-500 ease-out"
+                                :class="
+                                    percentFor(
+                                        group.key,
+                                        choiceGroups,
+                                        totalVotes,
+                                    ) > 0
+                                        ? 'bg-primary'
+                                        : 'bg-secondary'
+                                "
+                                :style="{
+                                    width: `${percentFor(
+                                        group.key,
+                                        choiceGroups,
+                                        totalVotes,
+                                    )}%`,
+                                }"
+                            />
+                            <div
+                                class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
+                                :class="
+                                    percentFor(
+                                        group.key,
+                                        choiceGroups,
+                                        totalVotes,
+                                    ) === 0
+                                        ? 'text-muted'
+                                        : 'text-white'
+                                "
+                            >
+                                {{
+                                    groupCount(String(group.key), choiceGroups)
+                                }}
+                                ({{
+                                    percentFor(
+                                        group.key,
+                                        choiceGroups,
+                                        totalVotes,
+                                    )
+                                }}%)
+                            </div>
+                        </div>
+                        <div class="text-xs text-muted">
+                            {{
+                                groupNames(String(group.key), choiceGroups) ||
+                                "—"
+                            }}
+                        </div>
+                    </div>
+                </div>
+            </div>
         </div>
 
         <div v-if="$slots.actions" class="mt-4">

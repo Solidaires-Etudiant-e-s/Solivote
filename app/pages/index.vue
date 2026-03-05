@@ -456,7 +456,6 @@ const runDelete = async () => {
                                         @click.prevent="launch(vote.id)"
                                     >
                                         Lancer le vote
-                                        {{ currentVote }}
                                     </UButton>
                                     <UButton
                                         icon="mingcute:delete-line"
