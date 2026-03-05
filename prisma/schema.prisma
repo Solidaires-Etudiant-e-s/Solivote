@@ -12,7 +12,6 @@ model Vote {
   nom          String
   type         TypeVote
   description  String?       @db.Text
-  content      String        @default("") @db.Text
   choix        Choix[]
   possibilites Possibilite[]
   rencontre    Rencontre     @relation(fields: [rencontreId], references: [id])

@@ -122,11 +122,6 @@ async function main() {
     "Validation du cadre proposé pour la mise en œuvre.",
     "Accord sur les modalités opérationnelles.",
   ];
-  const voteContents = [
-    "Le bureau présente un projet détaillant les objectifs, le calendrier et l'impact attendu. Les syndicats sont invités à se prononcer sur l'adoption.",
-    "Le texte soumis précise les engagements attendus, les ressources mobilisées et les modalités de suivi. Un vote est requis pour acter la décision.",
-    "La proposition inclut une synthèse des échanges, les points de consensus et les points de désaccord. Le vote statue sur la suite à donner.",
-  ];
 
   const votes = [];
   for (let rIndex = 0; rIndex < rencontres.length; rIndex += 1) {
@@ -141,10 +136,10 @@ async function main() {
         ? StatusVote.CLOTURE
         : isCurrent
           ? vIndex === 0
-              ? StatusVote.EN_VOTE
-              : vIndex <= 2
-                ? StatusVote.INITIAL
-                : StatusVote.CLOTURE
+            ? StatusVote.EN_VOTE
+            : vIndex <= 2
+              ? StatusVote.INITIAL
+              : StatusVote.CLOTURE
           : StatusVote.INITIAL;
 
       const vote = await prisma.vote.create({
@@ -153,7 +148,6 @@ async function main() {
           type: TypeVote.STANDARD,
           description:
             voteDescriptions[(rIndex + vIndex) % voteDescriptions.length],
-          content: voteContents[(rIndex + vIndex) % voteContents.length],
           rencontreId: rencontre.id,
           status,
         },
