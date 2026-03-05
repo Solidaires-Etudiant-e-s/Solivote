@@ -37,7 +37,7 @@ const props = defineProps<{
                         {{ props.vote.description }}
                     </div>
                     <div
-                        v-if="props.vote.type == TypeVote.CONDORCET"
+                        v-if="props.vote.type !== TypeVote.STANDARD"
                         class="flex gap-2 flex-wrap"
                     >
                         <template

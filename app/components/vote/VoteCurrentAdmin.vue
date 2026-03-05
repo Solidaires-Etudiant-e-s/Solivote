@@ -1,6 +1,4 @@
 <script setup lang="ts">
-import type { VotePayload } from "~/utils/frontendTypes";
-
 type VoteLike = VotePayload;
 
 const props = defineProps<{
@@ -78,6 +76,7 @@ const emit = defineEmits<{
             v-if="props.currentVoteStatus === 'success' && displayCurrentVote"
             :vote="displayCurrentVote"
             :user="props.user"
+            :execute="execute"
             @vote="(type, selected) => emit('vote', type, selected)"
             @panacher="
                 (panache, selected) => emit('panacher', panache, selected)

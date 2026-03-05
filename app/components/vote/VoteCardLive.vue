@@ -31,6 +31,7 @@ const props = withDefaults(
     defineProps<{
         vote: VoteLike;
         user?: { role: string; name?: string } | null;
+        execute: () => Promise<void> | void;
     }>(),
     {
         user: null,
@@ -79,8 +80,11 @@ const choiceMeta = computed(() => {
         base.push({ key: "ABSTENTION", label: "Abstention" });
         base.push({ key: "NPPV", label: "NPPV" });
     } else if (props.vote.type === TypeVote.EN_CONTRE) {
-        base.push({ key: "POUR", label: "Pour" });
-        base.push({ key: "CONTRE", label: "Contre" });
+        for (const i of props.vote.possibilites ?? []) {
+            base.push({ key: i.id, label: i.nom });
+        }
+        base.push({ key: "ABSTENTION", label: "Abstention" });
+        base.push({ key: "NPPV", label: "NPPV" });
     } else {
         for (const i of props.vote.possibilites ?? []) {
             base.push({ key: i.id, label: i.nom });
@@ -160,24 +164,6 @@ const percentFor = (key: string | number) => {
     return Math.round((count / total) * 100);
 };
 
-// const userChoice = computed(() => {
-//   let userName = "";
-//   if (props.user?.role === "admin" && vote_pour.value) {
-//     userName = vote_pour.value.toLowerCase();
-//   } else if (props.user?.role === "syndicat") {
-//     userName = props.user!.name!.toLowerCase();
-//   }
-//   const found = props.vote.choix.find((choice) => {
-//     console.log(choice.syndicat.nom?.toLowerCase());
-//     return choice.syndicat.nom?.toLowerCase() === userName;
-//   });
-//   const choix = found?.choix as Array<{
-//     type: string | number;
-//     mandat: number;
-//   }>;
-//   return choix ?? null;
-// });
-
 const vote_pour = ref("");
 
 watch(vote_pour, () => {
@@ -202,6 +188,10 @@ watch(vote_pour, () => {
                     </div>
                 </div>
                 <div class="flex items-center gap-2 flex-wrap shrink-0">
+                    <UButton
+                        icon="mingcute:refresh_3_fill"
+                        @click.prevent="props.execute"
+                    />
                     <UBadge>{{ props.vote.type }}</UBadge>
                     <UBadge label="En cours..." color="primary">
                         <template #leading>
@@ -335,10 +325,7 @@ watch(vote_pour, () => {
                     manque {{ availableMandats - sum_panachage }} mandats
                 </template>
             </UButton>
-            <div
-                v-if="$slots.actions"
-                class="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-            >
+            <div v-if="$slots.actions" class="mt-2">
                 <slot name="actions" />
             </div>
         </div>

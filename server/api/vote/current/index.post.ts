@@ -48,7 +48,7 @@ export default defineEventHandler(async (event) => {
   const en_vote = await enVote();
   const possibilites = en_vote.possibilites ?? [];
   const standardChoices = new Set(["POUR", "CONTRE", "ABSTENTION", "NPPV"]);
-  const enContreChoices = new Set(["POUR", "CONTRE"]);
+  const enContreChoices = new Set(["ABSTENTION", "NPPV"]);
 
   const possibiliteIds = new Set(
     possibilites.map((possibilite) => possibilite.id),

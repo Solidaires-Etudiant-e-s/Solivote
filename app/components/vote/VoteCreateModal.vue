@@ -21,11 +21,13 @@ const schema = z
         type: z.enum(Object.values(TypeVote)),
     })
     .refine((input) => {
-        if (input.type !== TypeVote.CONDORCET) {
+        if (input.type === TypeVote.STANDARD) {
             input.possibilites = [];
             return true;
         }
         if (input.possibilites.length == 0) return false;
+        if (input.type === TypeVote.EN_CONTRE && input.possibilites.length != 2)
+            return false;
         return true;
     });
 
@@ -117,8 +119,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                     <template #header>
                         <div class="text-lg font-semibold">Nouveau vote</div>
                         <p class="text-sm text-muted">
-                            Un titre court, un résumé et le texte complet du
-                            vote.
+                            Un titre court, un résumé et possiblement des choix
+                            du vote.
                         </p>
                     </template>
 
@@ -140,6 +142,14 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                             <UInputTags
                                 v-model="new_vote.possibilites"
                                 placeholder="choix du condorcet"
+                            />
+                        </template>
+
+                        <template v-if="new_vote.type === TypeVote.EN_CONTRE">
+                            <UInputTags
+                                v-model="new_vote.possibilites"
+                                :max="2"
+                                placeholder="choix du vote en contre ( toujour 2 )"
                             />
                         </template>
 
