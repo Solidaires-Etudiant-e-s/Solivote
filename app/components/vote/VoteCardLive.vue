@@ -32,6 +32,7 @@ const props = withDefaults(
         vote: VoteLike;
         user?: { role: string; name?: string } | null;
         execute: () => Promise<void> | void;
+        syndicatsRemaining?: Syndicat[] | null;
     }>(),
     {
         user: null,
@@ -325,7 +326,18 @@ watch(vote_pour, () => {
                     manque {{ availableMandats - sum_panachage }} mandats
                 </template>
             </UButton>
-            <div v-if="$slots.actions" class="mt-2">
+            <div
+                v-if="syndicatsRemaining"
+                class="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
+            >
+                <template
+                    v-for="syndicat in syndicatsRemaining"
+                    :key="syndicat.id"
+                >
+                    <UBadge>{{ syndicat.nom }}</UBadge>
+                </template>
+            </div>
+            <div v-if="$slots.actions" class="mt-2 flex gap-5">
                 <slot name="actions" />
             </div>
         </div>

@@ -6,6 +6,7 @@ const props = defineProps<{
     execute: () => Promise<void> | void;
     currentVote?: VoteLike | null;
     currentVoteStatus?: string | null;
+    syndicatsRemaining?: Syndicat[] | null;
 }>();
 
 const { data: syndicats } = await useLazyFetch("/api/syndicat");
@@ -77,6 +78,7 @@ const emit = defineEmits<{
             :vote="displayCurrentVote"
             :user="props.user"
             :execute="execute"
+            :syndicats-remaining="syndicatsRemaining"
             @vote="(type, selected) => emit('vote', type, selected)"
             @panacher="
                 (panache, selected) => emit('panacher', panache, selected)

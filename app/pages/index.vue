@@ -27,6 +27,8 @@ const { data: syndicat, status: syndicatStatus } = await useLazyFetch(
 const { data: syndicatsCurrent } = await useLazyFetch(
     "/api/syndicat/current/all",
 );
+const { data: syndicatsRemaining, execute: syndicatsRemainingExecute } =
+    await useLazyFetch("/api/syndicat/remaining");
 
 const wsStatus = ref("disconnected");
 let voteStream: EventSource | null = null;
@@ -46,6 +48,7 @@ const syncCurrentVoteFromServer = async () => {
         () => $fetch<VotePayload | null>("/api/vote/current"),
         "value",
     );
+    await syndicatsRemainingExecute();
 };
 
 const syncCurrentRencontreFromServer = async () => {
@@ -385,6 +388,8 @@ const runDelete = async () => {
                     "
                     :vote="currentVote"
                     :user="user"
+                    :execute="updateAll"
+                    :syndicats-remaining="syndicatsRemaining"
                     @vote="(type, _selected) => voter(type as TypeChoix)"
                     @panacher="
                         (panache, _selected) => panacher(panache as Panache)
@@ -397,6 +402,7 @@ const runDelete = async () => {
                 :current-vote="currentVote"
                 :user="user"
                 :current-vote-status="currentVoteStatus"
+                :syndicats-remaining="syndicatsRemaining"
                 @vote="(type, selected) => voter(type as TypeChoix, selected)"
                 @panacher="
                     (panache, selected) =>
