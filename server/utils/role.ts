@@ -23,9 +23,7 @@ export async function getUser(event: H3Event) {
     });
   }
 
-  const [uid, password] = Buffer.from(token, "base64")
-    .toString()
-    .split(":");
+  const [uid, password] = Buffer.from(token, "base64").toString().split(":");
 
   const client = new Client({
     url: LDAP_URL,

@@ -1,6 +1,6 @@
-import { StatusVote, type Vote } from "@prisma/client";
+import { StatusVote } from "@prisma/client";
 
-export async function currentVote(): Promise<Vote | null> {
+export async function currentVote() {
   return prisma.vote.findFirst({
     where: {
       status: StatusVote.EN_VOTE,

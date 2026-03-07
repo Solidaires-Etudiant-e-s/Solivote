@@ -16,8 +16,9 @@ export function sanitizeChoix(input: unknown): SanitizedChoix[] {
         const mandat = Number(rawMandat);
         if (!Number.isFinite(mandat) || mandat <= 0) return null;
 
-        const type =
-          /^[0-9]+$/.test(rawType) ? Number.parseInt(rawType, 10) : rawType;
+        const type = /^[0-9]+$/.test(rawType)
+          ? Number.parseInt(rawType, 10)
+          : rawType;
         return { type, mandat: Math.trunc(mandat) };
       })
       .filter((entry): entry is SanitizedChoix => entry !== null);

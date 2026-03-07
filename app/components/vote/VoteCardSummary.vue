@@ -1,224 +1,198 @@
 <script setup lang="ts">
 import type { TypeChoix, TypeVote } from "~/utils/backendTypes";
 type VoteChoice = {
-    date: Date | string;
-    choix: Array<{ type: string | number; mandat: number }>;
-    syndicat?: { nom?: string } | null;
-    [key: string]: unknown;
+  date: Date | string;
+  choix: Array<{ type: string | number; mandat: number }>;
+  syndicat?: { nom?: string } | null;
+  [key: string]: unknown;
 };
 
 type VoteLike = {
-    id: number;
-    nom: string;
-    type: TypeVote;
-    description?: string | null;
-    choix: VoteChoice[];
-    possibilites?: Array<{ id: number; nom: string }>;
-    status: string;
+  id: number;
+  nom: string;
+  type: TypeVote;
+  description?: string | null;
+  choix: VoteChoice[];
+  possibilites?: Array<{ id: number; nom: string }>;
+  status: string;
 };
 
 const props = defineProps<{
-    vote: VoteLike;
+  vote: VoteLike;
 }>();
 
 const choiceMeta: Array<{ key: TypeChoix; label: string }> = [
-    { key: "POUR", label: "Pour" },
-    { key: "CONTRE", label: "Contre" },
-    { key: "ABSTENTION", label: "Abstention" },
-    { key: "NPPV", label: "NPPV" },
+  { key: "POUR", label: "Pour" },
+  { key: "CONTRE", label: "Contre" },
+  { key: "ABSTENTION", label: "Abstention" },
+  { key: "NPPV", label: "NPPV" },
 ];
 
 const choiceTotals = computed<Record<TypeChoix, number>>(() => {
-    const base: Record<TypeChoix, number> = {
-        POUR: 0,
-        CONTRE: 0,
-        ABSTENTION: 0,
-        NPPV: 0,
-    };
+  const base: Record<TypeChoix, number> = {
+    POUR: 0,
+    CONTRE: 0,
+    ABSTENTION: 0,
+    NPPV: 0,
+  };
 
-    for (const choix of props.vote.choix || []) {
-        for (const entry of choix.choix) {
-            const type = String(entry.type);
-            const mandat = Number(entry.mandat ?? 0);
-            if (type in base && Number.isFinite(mandat) && mandat > 0) {
-                base[type as TypeChoix] += mandat;
-            }
-        }
+  for (const choix of props.vote.choix || []) {
+    for (const entry of choix.choix) {
+      const type = String(entry.type);
+      const mandat = Number(entry.mandat ?? 0);
+      if (type in base && Number.isFinite(mandat) && mandat > 0) {
+        base[type as TypeChoix] += mandat;
+      }
     }
+  }
 
-    return base;
+  return base;
 });
 
 const totalVotes = computed(() =>
-    Object.values(choiceTotals.value).reduce((sum, count) => sum + count, 0),
+  Object.values(choiceTotals.value).reduce((sum, count) => sum + count, 0),
 );
 
 const choiceGroups = computed(() => {
-    const base: Record<
-        string,
-        Array<{ syndicat: Syndicat; mandat: number }>
-    > = {};
+  const base: Record<
+    string,
+    Array<{ syndicat: Syndicat; mandat: number }>
+  > = {};
 
-    for (const i of props.vote.choix) {
-        for (const y of i.choix) {
-            if (!base[y.type]) {
-                base[y.type] = [];
-            }
-            base[y.type]!.push({ syndicat: i.syndicat, mandat: y.mandat });
-        }
+  for (const i of props.vote.choix) {
+    for (const y of i.choix) {
+      if (!base[y.type]) {
+        base[y.type] = [];
+      }
+      base[y.type]!.push({ syndicat: i.syndicat, mandat: y.mandat });
     }
+  }
 
-    return base;
+  return base;
 });
 
 const winnerKeys = computed(() => {
-    let max = -1;
-    const keys: TypeChoix[] = [];
+  let max = -1;
+  const keys: TypeChoix[] = [];
 
-    for (const option of choiceMeta) {
-        const count = groupCount(option.key, choiceGroups.value);
-        if (count > max) {
-            max = count;
-            keys.length = 0;
-            keys.push(option.key);
-        } else if (count === max && max > 0) {
-            keys.push(option.key);
-        }
+  for (const option of choiceMeta) {
+    const count = groupCount(option.key, choiceGroups.value);
+    if (count > max) {
+      max = count;
+      keys.length = 0;
+      keys.push(option.key);
+    } else if (count === max && max > 0) {
+      keys.push(option.key);
     }
+  }
 
-    return max > 0 ? keys : [];
+  return max > 0 ? keys : [];
 });
 
 const winnerLabel = computed(() => {
-    if (winnerKeys.value.length === 0) {
-        return "—";
-    }
-    return winnerKeys.value
-        .map(
-            (key) =>
-                choiceMeta.find((option) => option.key === key)?.label || key,
-        )
-        .join(" / ");
+  if (winnerKeys.value.length === 0) {
+    return "—";
+  }
+  return winnerKeys.value
+    .map((key) => choiceMeta.find((option) => option.key === key)?.label || key)
+    .join(" / ");
 });
 
 const winnerPercent = computed(() => {
-    if (winnerKeys.value.length === 0) {
-        return 0;
-    }
-    return Math.max(
-        ...winnerKeys.value.map((key) =>
-            groupPercent(key, totalVotes.value, choiceGroups.value),
-        ),
-    );
+  if (winnerKeys.value.length === 0) {
+    return 0;
+  }
+  return Math.max(
+    ...winnerKeys.value.map((key) =>
+      groupPercent(key, totalVotes.value, choiceGroups.value),
+    ),
+  );
 });
 </script>
 
 <template>
-    <UCard class="w-full">
-        <template #header>
-            <div class="flex flex-col gap-1 w-full">
-                <div
-                    class="text-base font-serif flex items-start justify-between gap-2"
-                >
-                    <span class="break-words">{{ props.vote.nom }}</span>
-                    <UBadge class="shrink-0">{{ props.vote.type }}</UBadge>
-                </div>
-                <div
-                    v-if="props.vote.description"
-                    class="text-xs text-muted break-words"
-                >
-                    {{ props.vote.description }}
-                </div>
-                <div
-                    v-if="props.vote.type == TypeVote.CONDORCET"
-                    class="flex gap-2 flex-wrap"
-                >
-                    <template
-                        v-for="possibilite in props.vote.possibilites ?? []"
-                        :key="possibilite.id"
-                    >
-                        <UBadge>{{ possibilite.nom }}</UBadge>
-                    </template>
-                </div>
-            </div>
-        </template>
-
-        <div class="flex justify-center">
-            <UBadge>{{ winnerLabel }} ({{ winnerPercent }}%)</UBadge>
-        </div>
-
-        <USeparator class="mt-6" />
-
+  <UCard class="w-full">
+    <template #header>
+      <div class="flex flex-col gap-1 w-full">
         <div
-            v-for="group in choiceMeta"
-            :key="group.key"
-            class="flex flex-col gap-2"
+          class="text-base font-serif flex items-start justify-between gap-2"
         >
-            <div class="flex items-start gap-3">
-                <div class="shrink-0 self-center flex items-center w-full">
-                    <div class="flex-1 min-w-0 flex flex-col gap-1.5">
-                        <span class="text-sm font-medium sm:font-normal">{{
-                            group.label
-                        }}</span>
-                        <div
-                            class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden"
-                        >
-                            <div
-                                class="h-full transition-[width] duration-500 ease-out"
-                                :class="
-                                    percentFor(
-                                        group.key,
-                                        choiceGroups,
-                                        totalVotes,
-                                    ) > 0
-                                        ? 'bg-primary'
-                                        : 'bg-secondary'
-                                "
-                                :style="{
-                                    width: `${percentFor(
-                                        group.key,
-                                        choiceGroups,
-                                        totalVotes,
-                                    )}%`,
-                                }"
-                            />
-                            <div
-                                class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
-                                :class="
-                                    percentFor(
-                                        group.key,
-                                        choiceGroups,
-                                        totalVotes,
-                                    ) === 0
-                                        ? 'text-muted'
-                                        : 'text-white'
-                                "
-                            >
-                                {{
-                                    groupCount(String(group.key), choiceGroups)
-                                }}
-                                ({{
-                                    percentFor(
-                                        group.key,
-                                        choiceGroups,
-                                        totalVotes,
-                                    )
-                                }}%)
-                            </div>
-                        </div>
-                        <div class="text-xs text-muted">
-                            {{
-                                groupNames(String(group.key), choiceGroups) ||
-                                "—"
-                            }}
-                        </div>
-                    </div>
-                </div>
-            </div>
+          <span class="break-words">{{ props.vote.nom }}</span>
+          <UBadge class="shrink-0">{{ props.vote.type }}</UBadge>
         </div>
+        <div
+          v-if="props.vote.description"
+          class="text-xs text-muted break-words"
+        >
+          {{ props.vote.description }}
+        </div>
+        <div
+          v-if="props.vote.type == TypeVote.CONDORCET"
+          class="flex gap-2 flex-wrap"
+        >
+          <template
+            v-for="possibilite in props.vote.possibilites ?? []"
+            :key="possibilite.id"
+          >
+            <UBadge>{{ possibilite.nom }}</UBadge>
+          </template>
+        </div>
+      </div>
+    </template>
 
-        <div v-if="$slots.actions" class="mt-4">
-            <slot name="actions" />
+    <div class="flex justify-center">
+      <UBadge>{{ winnerLabel }} ({{ winnerPercent }}%)</UBadge>
+    </div>
+
+    <USeparator class="mt-6" />
+
+    <div
+      v-for="group in choiceMeta"
+      :key="group.key"
+      class="flex flex-col gap-2"
+    >
+      <div class="flex items-start gap-3">
+        <div class="shrink-0 self-center flex items-center w-full">
+          <div class="flex-1 min-w-0 flex flex-col gap-1.5">
+            <span class="text-sm font-medium sm:font-normal">{{
+              group.label
+            }}</span>
+            <div
+              class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden"
+            >
+              <div
+                class="h-full transition-[width] duration-500 ease-out"
+                :class="
+                  percentFor(group.key, choiceGroups, totalVotes) > 0
+                    ? 'bg-primary'
+                    : 'bg-secondary'
+                "
+                :style="{
+                  width: `${percentFor(group.key, choiceGroups, totalVotes)}%`,
+                }"
+              />
+              <div
+                class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
+                :class="
+                  percentFor(group.key, choiceGroups, totalVotes) === 0
+                    ? 'text-muted'
+                    : 'text-white'
+                "
+              >
+                {{ groupCount(String(group.key), choiceGroups) }}
+                ({{ percentFor(group.key, choiceGroups, totalVotes) }}%)
+              </div>
+            </div>
+            <div class="text-xs text-muted">
+              {{ groupNames(String(group.key), choiceGroups) || "—" }}
+            </div>
+          </div>
         </div>
-    </UCard>
+      </div>
+    </div>
+
+    <div v-if="$slots.actions" class="mt-4">
+      <slot name="actions" />
+    </div>
+  </UCard>
 </template>

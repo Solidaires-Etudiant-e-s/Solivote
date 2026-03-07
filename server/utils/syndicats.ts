@@ -23,9 +23,7 @@ export async function getSyndicats(event: H3Event): Promise<string[]> {
     });
   }
 
-  const [uid, password] = Buffer.from(token, "base64")
-    .toString()
-    .split(":");
+  const [uid, password] = Buffer.from(token, "base64").toString().split(":");
 
   const client = new Client({
     url: LDAP_URL,

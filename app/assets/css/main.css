@@ -18,9 +18,11 @@
   --ui-border-accented: var(--color-stone-300);
   --ui-border-inverted: var(--color-stone-800);
   --ui-radius: 0em;
-  --font-sans: 'Lexend', 'Apple Color Emoji', sans-serif;
-  --font-serif: 'Scotchlidaires', Cambria, 'Times New Roman', Times, serif;
-  --font-mono: 'SFMono-Regular', ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;
+  --font-sans: "Lexend", "Apple Color Emoji", sans-serif;
+  --font-serif: "Scotchlidaires", Cambria, "Times New Roman", Times, serif;
+  --font-mono:
+    "SFMono-Regular", ui-monospace, Menlo, Monaco, Consolas, "Liberation Mono",
+    "Courier New", monospace;
   --font-weight-thin: 100;
   --font-weight-extralight: 200;
   --font-weight-light: 400;
@@ -68,7 +70,8 @@
   --color-solired-950: #2d0202;
 }
 
-html, body {
+html,
+body {
   background-color: var(--ui-bg);
   color: var(--ui-text);
   font-family: var(--font-sans, ui-sans-serif);
@@ -79,10 +82,24 @@ html, body {
   scrollbar-color: var(--color-solired-500) var(--color-stone-900);
 }
 
-code, pre, kbd, samp {
-  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace);
+code,
+pre,
+kbd,
+samp {
+  font-family: var(
+    --font-mono,
+    ui-monospace,
+    SFMono-Regular,
+    Menlo,
+    Monaco,
+    Consolas,
+    "Liberation Mono",
+    "Courier New",
+    monospace
+  );
 }
 
-h1, h2 {
+h1,
+h2 {
   font-family: var(--font-serif);
 }
