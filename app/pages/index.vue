@@ -313,6 +313,7 @@ const finishedVotes = computed(() =>
 
 const voteToDelete = ref<number | null>(null);
 const showNewVote = ref(false);
+const voteEdited: Ref<Vote | undefined, Vote> = ref();
 const showDeleteModal = computed({
   get: () => voteToDelete.value !== null,
   set: (val) => {
@@ -358,6 +359,11 @@ const runDelete = async () => {
   } finally {
     isDeletingVote.value = false;
   }
+};
+
+const edit = (vote: Vote) => {
+  voteEdited.value = vote;
+  showNewVote.value = true;
 };
 </script>
 
@@ -470,6 +476,20 @@ const runDelete = async () => {
                   >
                     Supprimer
                   </UButton>
+                  <UButton
+                    icon="mingcute:edit-line"
+                    color="primary"
+                    variant="soft"
+                    class="w-full sm:w-1/2 justify-center"
+                    :disabled="
+                      isDeletingVote ||
+                      vote.status !== 'INITIAL' ||
+                      vote.choix.length !== 0
+                    "
+                    @click.prevent="edit(vote)"
+                  >
+                    Éditer
+                  </UButton>
                 </div>
               </template>
             </VoteCardUpcoming>
@@ -555,6 +575,10 @@ const runDelete = async () => {
       </template>
     </UModal>
 
-    <VoteCreateModal v-model:open="showNewVote" @created="updateAll" />
+    <VoteCreateModal
+      v-model:open="showNewVote"
+      v-model:vote="voteEdited"
+      @created="updateAll"
+    />
   </div>
 </template>

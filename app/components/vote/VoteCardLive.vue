@@ -159,7 +159,7 @@ watch(vote_pour, () => {
         </div>
         <div class="flex items-center gap-2 flex-wrap shrink-0">
           <UButton
-            icon="mingcute:refresh_3_fill"
+            icon="mingcute:refresh-3-fill"
             @click.prevent="props.execute"
           />
           <UBadge>{{ props.vote.type }}</UBadge>

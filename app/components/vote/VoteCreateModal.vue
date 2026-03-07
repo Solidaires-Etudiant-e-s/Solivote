@@ -6,6 +6,7 @@ import { StatusVote, TypeVote } from "~/utils/backendTypes";
 
 const props = defineProps<{
   open: boolean;
+  vote?: Vote;
 }>();
 
 const emit = defineEmits<{
@@ -33,16 +34,11 @@ const schema = z
 
 type Schema = z.output<typeof schema>;
 
-const new_vote = reactive<{
-  nom: string;
-  description: string;
-  type: TypeVote;
-  possibilites: string[];
-}>({
-  nom: "",
-  description: "",
-  type: TypeVote.STANDARD,
-  possibilites: [],
+const new_vote = ref({
+  nom: props.vote?.nom ?? "",
+  description: props.vote?.description ?? "",
+  type: props.vote?.type ?? TypeVote.STANDARD,
+  possibilites: props.vote?.possibilites?.map((e) => e.nom) ?? [],
 });
 
 const toast = useToast();
@@ -88,9 +84,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       description: result.nom,
       color: "success",
     });
-    new_vote.nom = "";
-    new_vote.description = "";
-    new_vote.possibilites = [];
+    new_vote.value.nom = "";
+    new_vote.value.description = "";
+    new_vote.value.possibilites = [];
     emit("created");
   } catch {
     votesCache.value = previousVotes;
@@ -109,6 +105,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 <template>
   <UModal :open="props.open" @update:open="emit('update:open', $event)">
     <template #content>
+      {{ new_vote.nom }} {{ props.vote?.nom }}
       <UForm
         :schema="schema"
         :state="new_vote"
