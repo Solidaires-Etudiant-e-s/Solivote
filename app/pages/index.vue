@@ -327,6 +327,7 @@ const cancelDelete = () => {
 };
 const runDelete = async () => {
   const id = voteToDelete.value;
+  console.log(id);
   if (id == null || isDeletingVote.value) return;
 
   const previousVotes = cloneValue(votes.value ?? []);
@@ -486,7 +487,31 @@ const runDelete = async () => {
             :key="vote.id"
             class="flex flex-col gap-2"
           >
-            <VoteCardSummary :vote="vote" />
+            <VoteCardSummary :vote="vote">
+              <template #actions>
+                <UButton
+                  :disabled="
+                    currentVote !== undefined || isLaunchingVoteId !== null
+                  "
+                  icon="mingcute:refresh-2-line"
+                  color="warning"
+                  variant="solid"
+                  @click.prevent="launch(vote.id)"
+                >
+                  Relancer le vote
+                </UButton>
+                <UButton
+                  icon="mingcute:delete-line"
+                  color="primary"
+                  variant="soft"
+                  class="w-full sm:w-1/2 justify-center"
+                  :disabled="isDeletingVote"
+                  @click.prevent="confirmDelete(vote.id)"
+                >
+                  Supprimer
+                </UButton>
+              </template>
+            </VoteCardSummary>
           </div>
         </div>
         <p v-else class="text-sm text-muted">Aucun vote terminé.</p>

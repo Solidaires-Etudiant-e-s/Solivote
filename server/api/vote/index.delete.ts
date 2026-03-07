@@ -28,13 +28,6 @@ export default defineEventHandler(async (event) => {
     throw createError({ statusCode: 404, statusMessage: "Vote not found" });
   }
 
-  if (vote.status === "CLOTURE") {
-    throw createError({
-      statusCode: 400,
-      statusMessage: "Closed votes cannot be deleted",
-    });
-  }
-
   const result = await prisma.vote.delete({
     where: {
       id: data.id,

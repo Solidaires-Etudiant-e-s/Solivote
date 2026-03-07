@@ -31,7 +31,7 @@ model Choix {
   date       DateTime @default(now())
   syndicat   Syndicat @relation(fields: [syndicatId], references: [id])
   syndicatId Int
-  vote       Vote     @relation(fields: [voteId], references: [id])
+  vote       Vote     @relation(fields: [voteId], references: [id], onDelete: Cascade)
   voteId     Int
 
   choix Json
@@ -40,10 +40,10 @@ model Choix {
 }
 
 model Syndicat {
-  id            Int      @id @default(autoincrement())
-  nom           String   @unique
-  mandats       Mandat[] @relation()
-  choixStandard Choix[]
+  id      Int      @id @default(autoincrement())
+  nom     String   @unique
+  mandats Mandat[] @relation()
+  choix   Choix[]
 }
 
 model Mandat {

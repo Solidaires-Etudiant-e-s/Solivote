@@ -22,7 +22,7 @@ export default defineEventHandler(async (_event) => {
           rencontreId: rencontre.id,
         },
       },
-      choixStandard: {
+      choix: {
         none: {
           voteId: vote.id,
         },
