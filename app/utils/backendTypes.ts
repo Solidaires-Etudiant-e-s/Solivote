@@ -69,13 +69,14 @@ export type Choix = {
 export type Syndicat = {
   id: number;
   nom: string;
+  mandats: Mandat[];
 };
 
 export type Mandat = {
   syndicatId: number;
   rencontreId: number;
   syndicat: Syndicat;
-  rencontre?: Rencontre;
+  rencontre: Rencontre;
   mandat: number;
 };
 

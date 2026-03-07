@@ -2,34 +2,9 @@
 import { UBadge } from "#components";
 import { TypeVote } from "~/utils/backendTypes";
 
-type Possibilite = {
-  id: number;
-  nom: string;
-};
-
-type SyndicatWithMandats = {
-  id: number;
-  nom: string;
-  mandats: Array<{ mandat: number; rencontreId?: number }>;
-};
-
-type VoteLike = {
-  id: number;
-  rencontreId: number;
-  nom: string;
-  description?: string | null;
-  type: TypeVote;
-  possibilites?: Possibilite[];
-  choix: Array<{
-    syndicat: Syndicat;
-    choix: Array<{ type: string | number; mandat: number }>;
-  }>;
-  status: string;
-};
-
 const props = withDefaults(
   defineProps<{
-    vote: VoteLike;
+    vote: Vote;
     user?: { role: string; name?: string } | null;
     execute: () => Promise<void> | void;
     syndicatsRemaining?: Syndicat[] | null;
@@ -44,8 +19,7 @@ const { data: syndicats, status: syndicatsStatus } = await useLazyFetch(
 );
 
 const syndicatsName = computed(() => {
-  const s =
-    (syndicats.value as SyndicatWithMandats[] | null)?.map((e) => e.nom) ?? [];
+  const s = (syndicats.value as Syndicat[] | null)?.map((e) => e.nom) ?? [];
   return s;
 });
 
@@ -124,7 +98,7 @@ const selectedChoiceKey = computed(() => {
 const availableMandats = computed(() => {
   const name = selectedUnionName.value.trim().toLowerCase();
   if (!name) return 0;
-  const list = (syndicats.value as SyndicatWithMandats[] | null) ?? [];
+  const list = (syndicats.value as Syndicat[] | null) ?? [];
   const found = list.find((item) => item.nom.toLowerCase() === name);
   if (!found) return 0;
   const forCurrentRencontre = found.mandats.filter(

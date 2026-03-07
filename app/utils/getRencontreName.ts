@@ -1,10 +1,4 @@
-type RencontreLike = {
-  dateDebut: Date | string;
-  type: string;
-  nom?: string | null;
-};
-
-export default function (rencontre: RencontreLike) {
+export default function (rencontre: Rencontre) {
   if (rencontre.nom && rencontre.nom.trim()) {
     return rencontre.nom.trim();
   }

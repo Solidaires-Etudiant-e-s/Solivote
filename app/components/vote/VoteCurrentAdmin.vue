@@ -1,17 +1,15 @@
 <script setup lang="ts">
-type VoteLike = VotePayload;
-
 const props = defineProps<{
   user?: { role: string; name?: string } | null;
   execute: () => Promise<void> | void;
-  currentVote?: VoteLike | null;
+  currentVote?: Vote | null;
   currentVoteStatus?: string | null;
   syndicatsRemaining?: Syndicat[] | null;
 }>();
 
 const { data: syndicats } = await useLazyFetch("/api/syndicat");
-const { data: votesCache } = useNuxtData<VoteLike[]>("votes");
-const { data: currentVoteCache } = useNuxtData<VoteLike | null>("vote-current");
+const { data: votesCache } = useNuxtData<Vote[]>("votes");
+const { data: currentVoteCache } = useNuxtData<Vote | null>("vote-current");
 const syndicatCount = computed(() => syndicats.value?.length ?? 0);
 const isStoppingVote = ref(false);
 const optimisticallyStopped = ref(false);

@@ -1,21 +1,8 @@
 <script setup lang="ts">
 import type { TypeVote } from "~/utils/backendTypes";
-type Possibilite = {
-  id: number;
-  nom: string;
-};
-
-type VoteLike = {
-  id: number;
-  nom: string;
-  description?: string | null;
-  status: string;
-  type: TypeVote;
-  possibilites?: Possibilite[];
-};
 
 const props = defineProps<{
-  vote: VoteLike;
+  vote: Vote;
 }>();
 </script>
 
@@ -27,12 +14,12 @@ const props = defineProps<{
           <div
             class="text-base font-serif flex items-start justify-between gap-2"
           >
-            <span class="break-words">{{ props.vote.nom }}</span>
+            <span class="`wrap-break-word`">{{ props.vote.nom }}</span>
             <UBadge class="shrink-0">{{ props.vote.type }}</UBadge>
           </div>
           <div
             v-if="props.vote.description"
-            class="text-xs text-muted break-words"
+            class="text-xs text-muted `wrap-break-word`"
           >
             {{ props.vote.description }}
           </div>

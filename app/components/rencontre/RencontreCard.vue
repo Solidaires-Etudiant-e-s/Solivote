@@ -1,19 +1,11 @@
 <script setup lang="ts">
 import type { TableColumn } from "@nuxt/ui";
-import { StatusRencontre } from "~/utils/backendTypes";
+import { type Rencontre } from "~/utils/backendTypes";
 import getRencontreName from "~/utils/getRencontreName";
-
-type RencontreLike = {
-  id: number;
-  status: StatusRencontre;
-  mandats: Mandat[];
-  dateDebut: Date | string;
-  type: string;
-};
 
 const props = withDefaults(
   defineProps<{
-    rencontre: RencontreLike;
+    rencontre: Rencontre;
     user?: { role: string } | null;
     execute: (self?: boolean) => Promise<void> | void;
   }>(),
@@ -28,8 +20,7 @@ const isDemareOrCloture = computed(
     props.rencontre.status === StatusRencontre.CLOTURE,
 );
 
-const { data: rencontresCache } =
-  useNuxtData<RencontreLike[]>("/api/rencontre");
+const { data: rencontresCache } = useNuxtData<Rencontre[]>("/api/rencontre");
 const isDeletingRencontre = ref(false);
 const isMutatingMandats = ref(false);
 const mandatSnapshots = ref<Record<string, number>>({});
