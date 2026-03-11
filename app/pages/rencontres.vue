@@ -223,6 +223,28 @@ const reinit = async (id: number) => {
   }
 };
 
+const exporte = async (rencontre: Rencontre) => {
+  try {
+    const data = await $fetch(`/api/rencontre/export/${rencontre.id}`);
+    const jsonString = JSON.stringify(data, null, 2);
+    const blob = new Blob([jsonString], { type: "application/json" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `${rencontre.nom}.json`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  } catch {
+    toast.add({
+      title: "Export impossible",
+      description: "La rencontre n'a pas pu être exporté.",
+      color: "error",
+    });
+  }
+};
+
 const syndicat = ref<string[][]>([]);
 </script>
 
@@ -307,6 +329,17 @@ const syndicat = ref<string[][]>([]);
             @click.prevent="reinit(rencontre.id)"
           >
             Réinitialiser la rencontre
+          </UButton>
+        </div>
+        <div v-else class="flex justify-center gap-5">
+          <UButton
+            v-if="rencontre.status !== StatusRencontre.INITIAL"
+            icon="mingcute:file-export-line"
+            color="secondary"
+            variant="solid"
+            @click.prevent="exporte(rencontre)"
+          >
+            Exporter la rencontre
           </UButton>
         </div>
       </RencontreCard>

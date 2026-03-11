@@ -13,7 +13,7 @@ const isSuperadmin = computed(() => user.value?.role === "admin");
 
 const baseItems: NavigationMenuItem[] = [
   {
-    label: "Rencontres passées",
+    label: "Rencontres",
     icon: "mingcute:history-anticlockwise-line",
     to: "/rencontres",
   },
