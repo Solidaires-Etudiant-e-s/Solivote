@@ -313,7 +313,7 @@ const finishedVotes = computed(() =>
 
 const voteToDelete = ref<number | null>(null);
 const showNewVote = ref(false);
-const voteEdited: Ref<Vote | undefined, Vote> = ref();
+const voteEdited = ref<VotePayload | null>(null);
 const showDeleteModal = computed({
   get: () => voteToDelete.value !== null,
   set: (val) => {
@@ -328,7 +328,6 @@ const cancelDelete = () => {
 };
 const runDelete = async () => {
   const id = voteToDelete.value;
-  console.log(id);
   if (id == null || isDeletingVote.value) return;
 
   const previousVotes = cloneValue(votes.value ?? []);
@@ -361,135 +360,83 @@ const runDelete = async () => {
   }
 };
 
-const edit = (vote: Vote) => {
+const openVoteModal = (vote: VotePayload | null = null) => {
   voteEdited.value = vote;
   showNewVote.value = true;
+};
+
+const updateVoteModalOpen = (value: boolean) => {
+  showNewVote.value = value;
+  if (!value) {
+    voteEdited.value = null;
+  }
 };
 </script>
 
 <template>
   <div>
-    <AppHeader
-      :title="
-        currentRencontreStatus === 'success' && currentRencontre
-          ? getRencontreName(currentRencontre)
-          : 'Votes'
-      "
-      :user="user"
-      :status="userStatus"
-      :sse-status="wsStatus"
-    />
+    <AppHeader :title="currentRencontreStatus === 'success' && currentRencontre
+        ? getRencontreName(currentRencontre)
+        : 'Votes'
+      " :user="user" :status="userStatus" :sse-status="wsStatus" />
 
     <div class="w-full max-w-4xl mx-auto px-3 sm:px-4">
       <p v-if="userStatus !== 'success'">Chargement des informations...</p>
       <template v-else-if="user!.role === 'syndicat'">
-        <VoteCardLive
-          v-if="
-            currentVoteStatus === 'success' &&
-            currentVote &&
-            syndicatStatus === 'success' &&
-            syndicat &&
-            syndicat.mandats.length > 0
-          "
-          :vote="currentVote"
-          :user="user"
-          :execute="updateAll"
-          :syndicats-remaining="syndicatsRemaining"
+        <VoteCardLive v-if="
+          currentVoteStatus === 'success' &&
+          currentVote &&
+          syndicatStatus === 'success' &&
+          syndicat &&
+          syndicat.mandats.length > 0
+        " :vote="currentVote" :user="user" :execute="updateAll" :syndicats-remaining="syndicatsRemaining"
           @vote="(type, _selected) => voter(type as TypeChoix)"
-          @panacher="(panache, _selected) => panacher(panache as Panache)"
-        />
+          @panacher="(panache, _selected) => panacher(panache as Panache)" />
       </template>
-      <VoteCurrentAdmin
-        v-else-if="user!.role === 'admin'"
-        :execute="updateAll"
-        :current-vote="currentVote"
-        :user="user"
-        :current-vote-status="currentVoteStatus"
-        :syndicats-remaining="syndicatsRemaining"
-        @vote="(type, selected) => voter(type as TypeChoix, selected)"
-        @panacher="
+      <VoteCurrentAdmin v-else-if="user!.role === 'admin'" :execute="updateAll" :current-vote="currentVote" :user="user"
+        :current-vote-status="currentVoteStatus" :syndicats-remaining="syndicatsRemaining"
+        @vote="(type, selected) => voter(type as TypeChoix, selected)" @panacher="
           (panache, selected) => panacher(panache as Panache, selected)
-        "
-      />
+        " />
     </div>
 
-    <USeparator class="w-full my-5" />
+    <USeparator class="w-full my-5" v-if="currentVote" />
 
-    <div
-      v-if="voteStatus === 'success' && userStatus === 'success'"
-      class="w-full px-2 sm:px-4 pb-24 sm:pb-50"
-    >
+    <div v-if="voteStatus === 'success' && userStatus === 'success'" class="w-full px-2 sm:px-4 pb-24 sm:pb-50">
       <div class="w-full max-w-4xl mx-auto">
-        <div
-          class="flex flex-col sm:flex-row sm:items-center sm:justify-between my-4 gap-3"
-        >
+        <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between my-4 gap-3">
           <h2 class="text-xl font-bold">Votes à venir</h2>
-          <UButton
-            v-if="user!.role === 'admin'"
-            icon="mingcute:add-square-line"
-            color="primary"
-            :variant="upcomingVotes.length ? 'soft' : 'solid'"
-            @click="showNewVote = true"
-          >
+          <UButton v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
+            :variant="upcomingVotes.length ? 'soft' : 'solid'" @click="openVoteModal()">
             Nouveau vote
           </UButton>
         </div>
-        <div
-          v-if="upcomingVotes.length"
-          class="grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
-          <div
-            v-for="vote in upcomingVotes"
-            :key="vote.id"
-            class="flex flex-col gap-2"
-          >
+        <div v-if="upcomingVotes.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div v-for="vote in upcomingVotes" :key="vote.id" class="flex flex-col gap-2">
             <VoteCardUpcoming :vote="vote">
-              <template #actions>
-                <div
-                  v-if="user!.role === 'admin'"
-                  class="flex flex-col sm:flex-row gap-2"
-                >
-                  <UButton
-                    icon="mingcute:rocket-line"
-                    color="primary"
-                    class="w-full sm:w-1/2 justify-center"
-                    :variant="currentVote ? 'soft' : 'solid'"
-                    :loading="isLaunchingVoteId === vote.id"
-                    :disabled="
-                      currentVote !== undefined || isLaunchingVoteId !== null
-                    "
-                    @click.prevent="launch(vote.id)"
-                  >
+              <template #actions v-if="user!.role === 'admin'">
+                <div class="flex flex-col flex-wrap sm:flex-row gap-2">
+                  <UButton icon="mingcute:rocket-line" color="primary" class="w-full justify-center"
+                    :variant="currentVote ? 'soft' : 'solid'" :loading="isLaunchingVoteId === vote.id" :disabled="currentVote !== undefined || isLaunchingVoteId !== null
+                      " @click.prevent="launch(vote.id)">
                     Lancer le vote
                   </UButton>
-                  <UButton
-                    icon="mingcute:delete-line"
-                    color="primary"
-                    variant="soft"
-                    class="w-full sm:w-1/2 justify-center"
-                    :disabled="
-                      isDeletingVote ||
+                  <div class="flex w-full gap-2">
+                  <UButton icon="mingcute:delete-line" color="primary" variant="soft"
+                    class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote ||
                       vote.status !== 'INITIAL' ||
                       vote.choix.length !== 0
-                    "
-                    @click.prevent="confirmDelete(vote.id)"
-                  >
+                      " @click.prevent="confirmDelete(vote.id)">
                     Supprimer
                   </UButton>
-                  <UButton
-                    icon="mingcute:edit-line"
-                    color="primary"
-                    variant="soft"
-                    class="w-full sm:w-1/2 justify-center"
-                    :disabled="
-                      isDeletingVote ||
+                  <UButton icon="mingcute:edit-line" color="primary" variant="soft"
+                    class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote ||
                       vote.status !== 'INITIAL' ||
                       vote.choix.length !== 0
-                    "
-                    @click.prevent="edit(vote)"
-                  >
+                      " @click.prevent="openVoteModal(vote)">
                     Éditer
                   </UButton>
+                  </div>
                 </div>
               </template>
             </VoteCardUpcoming>
@@ -498,38 +445,21 @@ const edit = (vote: Vote) => {
         <p v-else class="text-sm text-muted">Aucun vote planifié.</p>
 
         <h2 class="text-xl mb-4 mt-12 font-bold">Votes terminés</h2>
-        <div
-          v-if="finishedVotes.length"
-          class="grid grid-cols-1 md:grid-cols-2 gap-4"
-        >
-          <div
-            v-for="vote in finishedVotes"
-            :key="vote.id"
-            class="flex flex-col gap-2"
-          >
+        <div v-if="finishedVotes.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div v-for="vote in finishedVotes" :key="vote.id" class="flex flex-col gap-2">
             <VoteCardSummary :vote="vote">
-              <template #actions>
-                <UButton
-                  :disabled="
-                    currentVote !== undefined || isLaunchingVoteId !== null
-                  "
-                  icon="mingcute:refresh-2-line"
-                  color="warning"
-                  variant="solid"
-                  @click.prevent="launch(vote.id)"
-                >
-                  Relancer le vote
-                </UButton>
-                <UButton
-                  icon="mingcute:delete-line"
-                  color="primary"
-                  variant="soft"
-                  class="w-full sm:w-1/2 justify-center"
-                  :disabled="isDeletingVote"
-                  @click.prevent="confirmDelete(vote.id)"
-                >
-                  Supprimer
-                </UButton>
+              <template #actions v-if="user!.role === 'admin'">
+                <div class="flex w-full items-center gap-2">
+                  <UButton :disabled="currentVote !== undefined || isLaunchingVoteId !== null
+                    " icon="mingcute:refresh-2-line" variant="soft" @click.prevent="launch(vote.id)" class="w-full sm:w-1/2 justify-center">
+                    Relancer le vote
+                  </UButton>
+                  <UButton icon="mingcute:delete-line" variant="soft"
+                    class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote"
+                    @click.prevent="confirmDelete(vote.id)" >
+                    Supprimer
+                  </UButton>
+                </div>
               </template>
             </VoteCardSummary>
           </div>
@@ -548,25 +478,12 @@ const edit = (vote: Vote) => {
             Confirmer la suppression de ce vote ?
           </p>
           <template #footer>
-            <div
-              class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3"
-            >
-              <UButton
-                color="neutral"
-                variant="ghost"
-                class="w-full sm:w-auto"
-                @click="cancelDelete"
-              >
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+              <UButton color="neutral" variant="ghost" class="w-full sm:w-auto" @click="cancelDelete">
                 Annuler
               </UButton>
-              <UButton
-                color="primary"
-                variant="soft"
-                class="w-full sm:w-auto"
-                :loading="isDeletingVote"
-                :disabled="isDeletingVote"
-                @click="runDelete"
-              >
+              <UButton color="primary" variant="soft" class="w-full sm:w-auto" :loading="isDeletingVote"
+                :disabled="isDeletingVote" @click="runDelete">
                 Supprimer
               </UButton>
             </div>
@@ -575,10 +492,7 @@ const edit = (vote: Vote) => {
       </template>
     </UModal>
 
-    <VoteCreateModal
-      v-model:open="showNewVote"
-      v-model:vote="voteEdited"
-      @created="updateAll"
-    />
+    <VoteCreateModal :open="showNewVote" :vote="voteEdited" @update:open="updateVoteModalOpen"
+      @saved="updateAll" />
   </div>
 </template>

@@ -150,18 +150,12 @@ watch(vote_pour, () => {
           <div class="text-lg sm:text-xl font-serif wrap-break-word">
             {{ props.vote.nom }}
           </div>
-          <div
-            v-if="props.vote.description"
-            class="text-xs text-muted wrap-break-word"
-          >
+          <div v-if="props.vote.description" class="text-xs text-muted wrap-break-word">
             {{ props.vote.description }}
           </div>
         </div>
         <div class="flex items-center gap-2 flex-wrap shrink-0">
-          <UButton
-            icon="mingcute:refresh-3-fill"
-            @click.prevent="props.execute"
-          />
+          <UButton icon="mingcute:refresh-3-fill" @click.prevent="props.execute" />
           <UBadge>{{ props.vote.type }}</UBadge>
           <UBadge label="En cours..." color="primary">
             <template #leading>
@@ -173,86 +167,41 @@ watch(vote_pour, () => {
     </template>
 
     <div class="flex flex-col gap-6">
-      <div
-        v-if="props.user?.role === 'admin' && syndicatsStatus === 'success'"
-        class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-4"
-      >
+      <div v-if="props.user?.role === 'admin' && syndicatsStatus === 'success'"
+        class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-4">
         Voter à la place de :
-        <UInputMenu
-          v-model="vote_pour"
-          :items="syndicatsName"
-          class="w-full sm:w-auto"
-        />
+        <UInputMenu v-model="vote_pour" :items="syndicatsName" class="w-full sm:w-auto" />
       </div>
-      <div
-        v-if="props.user?.role === 'syndicat' || vote_pour"
-        class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-4"
-      >
-        <span
-          >Panachage ({{ availableMandats }} mandat{{
-            availableMandats > 1 ? "s" : ""
-          }})</span
-        >
+      <div v-if="(props.user?.role === 'syndicat' && availableMandats > 1) || vote_pour"
+        class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-4">
+        <span>Panachage ({{ availableMandats }} mandat{{
+          availableMandats > 1 ? "s" : ""
+          }})</span>
         <USwitch v-model="en_panachage" />
       </div>
-      <div
-        v-for="group in choiceMeta"
-        :key="group.key"
-        class="flex flex-col gap-2"
-      >
+      <div v-for="group in choiceMeta" :key="group.key" class="flex flex-col gap-2">
         <div class="flex items-start gap-3">
-          <div
-            v-if="props.user?.role === 'syndicat' || vote_pour"
-            class="shrink-0 self-center flex items-center"
-          >
-            <UButton
-              v-if="!en_panachage"
-              :icon="
-                selectedChoiceKey === String(group.key)
-                  ? 'mingcute:check-fill'
-                  : 'mingcute:square-line'
-              "
-              :color="
-                selectedChoiceKey === String(group.key) ? 'primary' : 'neutral'
-              "
-              :variant="
-                selectedChoiceKey === String(group.key) ? 'solid' : 'outline'
-              "
-              @click="emit('vote', String(group.key), vote_pour)"
-            />
-            <UInputNumber
-              v-else
-              v-model="panachage[group.key]"
-              :min="0"
-              :max="
-                (panachage[group.key] ?? 0) + availableMandats - sum_panachage
-              "
-              :default-value="0"
-              class="w-20 sm:w-24"
-            />
+          <div v-if="props.user?.role === 'syndicat' || vote_pour" class="shrink-0 self-center flex items-center">
+            <UButton v-if="!en_panachage" :icon="selectedChoiceKey === String(group.key)
+              ? 'mingcute:check-fill'
+              : 'mingcute:square-line'
+              " :color="selectedChoiceKey === String(group.key) ? 'primary' : 'neutral'
+                " :variant="selectedChoiceKey === String(group.key) ? 'solid' : 'outline'
+                  " @click="emit('vote', String(group.key), vote_pour)" />
+            <UInputNumber v-else v-model="panachage[group.key]" :min="0" :max="(panachage[group.key] ?? 0) + availableMandats - sum_panachage
+              " :default-value="0" class="w-20 sm:w-24" />
           </div>
           <div class="flex-1 min-w-0 flex flex-col gap-1.5">
             <span class="text-sm font-medium sm:font-normal">{{
               group.label
             }}</span>
-            <div
-              class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden"
-            >
-              <div
-                class="h-full transition-[width] duration-500 ease-out"
-                :class="
-                  percentFor(group.key) > 0 ? 'bg-primary' : 'bg-secondary'
-                "
-                :style="{
+            <div class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden">
+              <div class="h-full transition-[width] duration-500 ease-out" :class="percentFor(group.key) > 0 ? 'bg-primary' : 'bg-secondary'
+                " :style="{
                   width: `${percentFor(group.key)}%`,
-                }"
-              />
-              <div
-                class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
-                :class="
-                  percentFor(group.key) === 0 ? 'text-muted' : 'text-white'
-                "
-              >
+                }" />
+              <div class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold" :class="percentFor(group.key) === 0 ? 'text-muted' : 'text-white'
+                ">
                 {{ groupCount(String(group.key), choiceGroups) }}
                 ({{ percentFor(group.key) }}%)
               </div>
@@ -263,28 +212,22 @@ watch(vote_pour, () => {
           </div>
         </div>
       </div>
-      <UButton
-        v-if="en_panachage"
-        class="w-full sm:w-auto"
-        :disabled="sum_panachage !== availableMandats"
-        @click="emit('panacher', panachage, vote_pour)"
-      >
+      <UButton v-if="en_panachage" class="w-full sm:w-auto" :disabled="sum_panachage !== availableMandats"
+        @click="emit('panacher', panachage, vote_pour)">
         Panacher !
         <template v-if="sum_panachage !== availableMandats">
           manque {{ availableMandats - sum_panachage }} mandats
         </template>
       </UButton>
-      <div
-        v-if="syndicatsRemaining"
-        class="w-full flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3"
-      >
-        <template v-for="syndicat in syndicatsRemaining" :key="syndicat.id">
-          <UBadge>{{ syndicat.nom }}</UBadge>
-        </template>
-      </div>
-      <div v-if="$slots.actions" class="mt-2 flex gap-5">
-        <slot name="actions" />
-      </div>
+                  <slot name="actions" />
+
     </div>
+    <template #footer v-if="syndicatsRemaining && syndicatsRemaining.length > 0">
+      <span class="text-sm">Syndicats restants:</span>
+      <div class="w-full flex flex-row gap-3 pt-2">
+        <UBadge v-for="syndicat in syndicatsRemaining" :key="syndicat.id">{{ syndicat.nom }}</UBadge>
+      </div>
+
+    </template>
   </UCard>
 </template>

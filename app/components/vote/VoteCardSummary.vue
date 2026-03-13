@@ -12,6 +12,18 @@ const choiceMeta: Array<{ key: TypeChoix; label: string }> = [
   { key: "NPPV", label: "NPPV" },
 ];
 
+const sortedChoiceMeta = computed(() =>
+  [...choiceMeta].sort((left, right) => {
+    const totalDiff = choiceTotals.value[right.key] - choiceTotals.value[left.key];
+    if (totalDiff !== 0) {
+      return totalDiff;
+    }
+
+    return choiceMeta.findIndex((choice) => choice.key === left.key)
+      - choiceMeta.findIndex((choice) => choice.key === right.key);
+  }),
+);
+
 const choiceTotals = computed<Record<TypeChoix, number>>(() => {
   const base: Record<TypeChoix, number> = {
     POUR: 0,
@@ -54,44 +66,6 @@ const choiceGroups = computed(() => {
 
   return base;
 });
-
-const winnerKeys = computed(() => {
-  let max = -1;
-  const keys: TypeChoix[] = [];
-
-  for (const option of choiceMeta) {
-    const count = groupCount(option.key, choiceGroups.value);
-    if (count > max) {
-      max = count;
-      keys.length = 0;
-      keys.push(option.key);
-    } else if (count === max && max > 0) {
-      keys.push(option.key);
-    }
-  }
-
-  return max > 0 ? keys : [];
-});
-
-const winnerLabel = computed(() => {
-  if (winnerKeys.value.length === 0) {
-    return "—";
-  }
-  return winnerKeys.value
-    .map((key) => choiceMeta.find((option) => option.key === key)?.label || key)
-    .join(" / ");
-});
-
-const winnerPercent = computed(() => {
-  if (winnerKeys.value.length === 0) {
-    return 0;
-  }
-  return Math.max(
-    ...winnerKeys.value.map((key) =>
-      groupPercent(key, totalVotes.value, choiceGroups.value),
-    ),
-  );
-});
 </script>
 
 <template>
@@ -124,16 +98,10 @@ const winnerPercent = computed(() => {
       </div>
     </template>
 
-    <div class="flex justify-center">
-      <UBadge>{{ winnerLabel }} ({{ winnerPercent }}%)</UBadge>
-    </div>
-
-    <USeparator class="mt-6" />
-
     <div
-      v-for="group in choiceMeta"
+      v-for="group in sortedChoiceMeta"
       :key="group.key"
-      class="flex flex-col gap-2"
+      class="flex flex-col gap-2 "
     >
       <div class="flex items-start gap-3">
         <div class="shrink-0 self-center flex items-center w-full">
@@ -175,8 +143,8 @@ const winnerPercent = computed(() => {
       </div>
     </div>
 
-    <div v-if="$slots.actions" class="mt-4">
+    <template #footer v-if="$slots.actions" class="mt-4">
       <slot name="actions" />
-    </div>
+    </template>
   </UCard>
 </template>

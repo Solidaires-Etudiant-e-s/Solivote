@@ -2,102 +2,133 @@
 import type { FormSubmitEvent } from "@nuxt/ui";
 import { z } from "zod";
 import type { Vote } from "~/utils/backendTypes";
-import { StatusVote, TypeVote } from "~/utils/backendTypes";
+import { TypeVote } from "~/utils/backendTypes";
 
-const props = defineProps<{
-  open: boolean;
-  vote?: Vote;
-}>();
+const props = withDefaults(
+  defineProps<{
+    open: boolean;
+    vote?: Vote | null;
+  }>(),
+  {
+    vote: null,
+  },
+);
 
 const emit = defineEmits<{
   (event: "update:open", value: boolean): void;
-  (event: "created"): void;
+  (event: "saved"): void;
 }>();
 
 const schema = z
   .object({
-    nom: z.string().min(1),
-    description: z.string().nullable(),
-    possibilites: z.array(z.string().min(1)),
+    nom: z.string().trim().min(1),
+    description: z.string(),
+    possibilites: z.array(z.string().trim().min(1)),
     type: z.enum(Object.values(TypeVote)),
   })
-  .refine((input) => {
+  .superRefine((input, ctx) => {
     if (input.type === TypeVote.STANDARD) {
-      input.possibilites = [];
-      return true;
+      return;
     }
-    if (input.possibilites.length == 0) return false;
-    if (input.type === TypeVote.EN_CONTRE && input.possibilites.length != 2)
-      return false;
-    return true;
+    if (input.possibilites.length === 0) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Ajoutez au moins un choix.",
+        path: ["possibilites"],
+      });
+    }
+    if (input.type === TypeVote.EN_CONTRE && input.possibilites.length !== 2) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Le vote en contre doit contenir exactement deux choix.",
+        path: ["possibilites"],
+      });
+    }
   });
 
 type Schema = z.output<typeof schema>;
-
-const new_vote = ref({
-  nom: props.vote?.nom ?? "",
-  description: props.vote?.description ?? "",
-  type: props.vote?.type ?? TypeVote.STANDARD,
-  possibilites: props.vote?.possibilites?.map((e) => e.nom) ?? [],
+const formState = reactive({
+  nom: "",
+  description: "",
+  type: TypeVote.STANDARD as Vote["type"],
+  possibilites: [] as string[],
 });
+const isEditing = computed(() => !!props.vote);
+const syncForm = () => {
+  formState.nom = props.vote?.nom ?? "";
+  formState.description = props.vote?.description ?? "";
+  formState.type = props.vote?.type ?? TypeVote.STANDARD;
+  formState.possibilites = props.vote?.possibilites?.map((entry) => entry.nom) ?? [];
+};
+
+watch(
+  [() => props.open, () => props.vote],
+  ([isOpen]) => {
+    if (isOpen) {
+      syncForm();
+    }
+  },
+  { immediate: true },
+);
+
+watch(
+  () => formState.type,
+  (type) => {
+    if (type === TypeVote.STANDARD) {
+      formState.possibilites = [];
+    }
+    if (type === TypeVote.EN_CONTRE && formState.possibilites.length > 2) {
+      formState.possibilites = formState.possibilites.slice(0, 2);
+    }
+  },
+);
 
 const toast = useToast();
-const { data: votesCache } = useNuxtData<Vote[]>("votes");
-const isCreatingVote = ref(false);
-async function onSubmit(event: FormSubmitEvent<Schema>) {
-  if (isCreatingVote.value) return;
+const isSubmitting = ref(false);
 
-  const previousVotes = structuredClone(votesCache.value ?? []);
-  const tempId = -Date.now();
-  const optimisticVote = {
-    id: tempId,
-    date: new Date(),
-    nom: event.data.nom,
-    type: event.data.type,
-    description: event.data.description,
-    content: "",
-    rencontreId: 0,
-    status: StatusVote.INITIAL,
-    choix: [],
-    possibilites:
-      event.data.type === TypeVote.CONDORCET
-        ? event.data.possibilites.map((nom, index) => ({
-            id: tempId - index - 1,
-            nom,
-            voteId: tempId,
-          }))
-        : [],
-    rencontre: {} as Vote["rencontre"],
-  } as Vote;
-
-  votesCache.value = [optimisticVote, ...(votesCache.value ?? [])];
-  isCreatingVote.value = true;
+const close = () => {
   emit("update:open", false);
+};
+
+async function onSubmit(event: FormSubmitEvent<Schema>) {
+  if (isSubmitting.value) return;
+
+  const payload = {
+    nom: event.data.nom.trim(),
+    description: event.data.description.trim() || null,
+    type: event.data.type,
+    possibilites:
+      event.data.type === TypeVote.STANDARD
+        ? []
+        : event.data.possibilites.map((entry) => entry.trim()).filter(Boolean),
+  };
+  isSubmitting.value = true;
 
   try {
     const result = await $fetch("/api/vote", {
-      method: "POST",
-      body: event.data,
+      method: isEditing.value ? "PUT" : "POST",
+      body: isEditing.value
+        ? {
+            id: props.vote!.id,
+            ...payload,
+          }
+        : payload,
     });
     toast.add({
-      title: "Vote créé",
+      title: isEditing.value ? "Vote modifié" : "Vote créé",
       description: result.nom,
       color: "success",
     });
-    new_vote.value.nom = "";
-    new_vote.value.description = "";
-    new_vote.value.possibilites = [];
-    emit("created");
+    close();
+    emit("saved");
   } catch {
-    votesCache.value = previousVotes;
-    emit("update:open", true);
     toast.add({
-      title: "Création impossible",
+      title: isEditing.value ? "Modification impossible" : "Création impossible",
       description: "Vérifiez les champs puis réessayez.",
       color: "error",
     });
   } finally {
-    isCreatingVote.value = false;
+    isSubmitting.value = false;
   }
 }
 </script>
@@ -105,16 +136,17 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 <template>
   <UModal :open="props.open" @update:open="emit('update:open', $event)">
     <template #content>
-      {{ new_vote.nom }} {{ props.vote?.nom }}
       <UForm
         :schema="schema"
-        :state="new_vote"
+        :state="formState"
         class="w-full"
         @submit.prevent="onSubmit"
       >
         <UCard>
           <template #header>
-            <div class="text-lg font-semibold">Nouveau vote</div>
+            <div class="text-lg font-semibold">
+              {{ isEditing ? "Modifier le vote" : "Nouveau vote" }}
+            </div>
             <p class="text-sm text-muted">
               Un titre court, un résumé et possiblement des choix du vote.
             </p>
@@ -123,31 +155,39 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <div class="grid gap-4">
             <UFormField label="Titre du vote" name="nom">
               <UInput
-                v-model="new_vote.nom"
+                v-model="formState.nom"
                 placeholder="Ex. Adoption du budget 2026"
               />
             </UFormField>
             <UFormField label="Type" name="type">
               <USelect
-                v-model="new_vote.type"
+                v-model="formState.type"
                 :items="Object.values(TypeVote)"
               />
             </UFormField>
 
-            <template v-if="new_vote.type === TypeVote.CONDORCET">
+            <UFormField
+              v-if="formState.type === TypeVote.CONDORCET"
+              label="Choix"
+              name="possibilites"
+            >
               <UInputTags
-                v-model="new_vote.possibilites"
-                placeholder="choix du condorcet"
+                v-model="formState.possibilites"
+                placeholder="Choix du vote condorcet"
               />
-            </template>
+            </UFormField>
 
-            <template v-if="new_vote.type === TypeVote.EN_CONTRE">
+            <UFormField
+              v-if="formState.type === TypeVote.EN_CONTRE"
+              label="Choix"
+              name="possibilites"
+            >
               <UInputTags
-                v-model="new_vote.possibilites"
+                v-model="formState.possibilites"
                 :max="2"
-                placeholder="choix du vote en contre ( toujour 2 )"
+                placeholder="Deux choix pour le vote en contre"
               />
-            </template>
+            </UFormField>
 
             <UFormField
               label="Résumé (optionel)"
@@ -155,7 +195,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
               help="Affiché dans la liste (1–2 phrases)."
             >
               <UTextarea
-                v-model="new_vote.description"
+                v-model="formState.description"
                 class="w-full"
                 placeholder="Ex. Vote de principe sur la proposition présentée."
                 :rows="2"
@@ -171,7 +211,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                 color="neutral"
                 variant="ghost"
                 class="w-full sm:w-auto"
-                @click="emit('update:open', false)"
+                @click="close"
               >
                 Annuler
               </UButton>
@@ -179,10 +219,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
                 type="submit"
                 color="primary"
                 class="w-full sm:w-auto"
-                :loading="isCreatingVote"
-                :disabled="isCreatingVote"
+                :loading="isSubmitting"
+                :disabled="isSubmitting"
               >
-                Créer le vote
+                {{ isEditing ? "Enregistrer" : "Créer le vote" }}
               </UButton>
             </div>
           </template>
