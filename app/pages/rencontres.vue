@@ -270,7 +270,9 @@ const syndicat = ref<string[][]>([]);
         <div v-if="user!.role === 'admin'" class="flex justify-center gap-5">
           <UForm
             v-if="
-              details[index] && rencontre.status === StatusRencontre.INITIAL
+              details[index] &&
+              (rencontre.status === StatusRencontre.INITIAL ||
+                rencontre.status === StatusRencontre.DEMARE)
             "
             :state="details[index]"
             class="flex flex-row gap-5 justify-center"
