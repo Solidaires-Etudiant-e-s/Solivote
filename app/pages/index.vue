@@ -325,12 +325,56 @@ const panacher = async (
   }
 };
 
+const upcomingSearch = ref("");
+const finishedSearch = ref("");
+
+const fuzzyMatch = (query: string, target: string): boolean => {
+  if (!query) return true;
+  const q = query.toLowerCase();
+  const t = target.toLowerCase();
+
+  const trigrams = (s: string) => {
+    const padded = ` ${s} `;
+    const set: string[] = [];
+    for (let i = 0; i < padded.length - 2; i++)
+      set.push(padded.slice(i, i + 3));
+    return set;
+  };
+  const qt = trigrams(q);
+  const tt = trigrams(t);
+  if (qt.length === 0) return true;
+  const ttCounts = new Map<string, number>();
+  for (const g of tt) ttCounts.set(g, (ttCounts.get(g) ?? 0) + 1);
+  let matches = 0;
+  for (const g of qt) {
+    const c = ttCounts.get(g) ?? 0;
+    if (c > 0) { matches++; ttCounts.set(g, c - 1); }
+  }
+  return matches / qt.length >= 0.4;
+};
+
+const fuzzyFilterVotes = (list: VotePayload[], query: string) => {
+  const q = query.trim();
+  if (!q) return list;
+  return list.filter(
+    (vote) =>
+      fuzzyMatch(q, vote.nom) ||
+      (vote.description != null && fuzzyMatch(q, vote.description)),
+  );
+};
+
 const upcomingVotes = computed(() =>
-  (votes.value ?? []).filter((vote) => vote.status === "INITIAL"),
+  fuzzyFilterVotes(
+    (votes.value ?? []).filter((vote) => vote.status === "INITIAL"),
+    upcomingSearch.value,
+  ),
 );
 
 const finishedVotes = computed(() =>
-  (votes.value ?? []).filter((vote) => vote.status === "CLOTURE"),
+  fuzzyFilterVotes(
+    (votes.value ?? []).filter((vote) => vote.status === "CLOTURE"),
+    finishedSearch.value,
+  ),
 );
 
 const voteToDelete = ref<number | null>(null);
@@ -433,6 +477,12 @@ const updateVoteModalOpen = (value: boolean) => {
             Nouveau vote
           </UButton>
         </div>
+        <UInput
+          v-model="upcomingSearch"
+          icon="mingcute:search-line"
+          placeholder="Rechercher..."
+          class="w-full mb-4"
+        />
         <div v-if="upcomingVotes.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div v-for="vote in upcomingVotes" :key="vote.id" class="flex flex-col gap-2">
             <VoteCardUpcoming :vote="vote">
@@ -464,9 +514,15 @@ const updateVoteModalOpen = (value: boolean) => {
             </VoteCardUpcoming>
           </div>
         </div>
-        <p v-else class="text-sm text-muted">Aucun vote planifié.</p>
+        <p v-else class="text-sm text-muted">{{ upcomingSearch.trim() ? "Aucun résultat." : "Aucun vote planifié." }}</p>
 
-        <h2 class="text-xl mb-4 mt-12 font-bold">Votes terminés</h2>
+        <h2 class="text-xl mb-3 mt-12 font-bold">Votes terminés</h2>
+        <UInput
+          v-model="finishedSearch"
+          icon="mingcute:search-line"
+          placeholder="Rechercher..."
+          class="w-full mb-4"
+        />
         <div v-if="finishedVotes.length" class="grid grid-cols-1 md:grid-cols-2 gap-4">
           <div v-for="vote in finishedVotes" :key="vote.id" class="flex flex-col gap-2">
             <VoteCardSummary :vote="vote">
@@ -486,7 +542,7 @@ const updateVoteModalOpen = (value: boolean) => {
             </VoteCardSummary>
           </div>
         </div>
-        <p v-else class="text-sm text-muted">Aucun vote terminé.</p>
+        <p v-else class="text-sm text-muted">{{ finishedSearch.trim() ? "Aucun résultat." : "Aucun vote terminé." }}</p>
       </div>
     </div>
 
