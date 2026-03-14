@@ -57,8 +57,6 @@ const del = async (id: number) => {
   }
 };
 
-const rencontreData = ref<Mandat[]>(props.rencontre.mandats);
-
 const columns: TableColumn<Mandat>[] = [
   {
     accessorKey: "syndicat.nom",
@@ -76,13 +74,9 @@ const columns: TableColumn<Mandat>[] = [
 const toast = useToast();
 const delSyndicat = async (id: number) => {
   if (isMutatingMandats.value) return;
-  const previousMandats = structuredClone(rencontreData.value);
   const previousRencontres = structuredClone(rencontresCache.value ?? []);
   isMutatingMandats.value = true;
 
-  rencontreData.value = rencontreData.value.filter(
-    (mandat) => mandat.syndicatId !== id,
-  );
   if (rencontresCache.value) {
     const rencontre = rencontresCache.value.find(
       (item) => item.id === props.rencontre.id,
@@ -109,7 +103,6 @@ const delSyndicat = async (id: number) => {
     });
     await props.execute();
   } catch {
-    rencontreData.value = previousMandats;
     rencontresCache.value = previousRencontres;
     toast.add({
       title: "Retrait impossible",
@@ -127,7 +120,7 @@ const updateMandat = async (
   newmandat: number,
 ) => {
   if (isMutatingMandats.value) return;
-  const row = rencontreData.value.find(
+  const row = props.rencontre.mandats.find(
     (mandat) =>
       mandat.syndicatId === syndicatId && mandat.rencontreId === rencontreId,
   );
@@ -188,7 +181,7 @@ const updateMandat = async (
     </template>
 
     <UTable
-      :data="rencontreData"
+      :data="props.rencontre.mandats"
       class="flex-1 max-h-50"
       :columns
       :loading="isMutatingMandats"
