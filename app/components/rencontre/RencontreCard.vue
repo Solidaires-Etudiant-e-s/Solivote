@@ -20,6 +20,10 @@ const isDemareOrCloture = computed(
     props.rencontre.status === StatusRencontre.CLOTURE,
 );
 
+const isCloture = computed(
+  () => props.rencontre.status === StatusRencontre.CLOTURE,
+);
+
 const { data: rencontresCache } = useNuxtData<Rencontre[]>("/api/rencontre");
 const isDeletingRencontre = ref(false);
 const isMutatingMandats = ref(false);
@@ -187,10 +191,10 @@ const updateMandat = async (
       :data="rencontreData"
       class="flex-1 max-h-50"
       :columns
-      :loading="props.rencontre.status === 'DEMARE'"
+      :loading="isMutatingMandats"
     >
       <template
-        v-if="props.user?.role === 'admin' && !isDemareOrCloture"
+        v-if="props.user?.role === 'admin' && !isCloture"
         #mandat-cell="{ row }"
       >
         <UInputNumber
