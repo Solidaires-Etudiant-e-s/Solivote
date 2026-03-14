@@ -65,11 +65,17 @@ const emit = defineEmits<{
   (event: "vote", type: string, selected: string): void;
   (event: "panacher", values: Panache, selected: string): void;
 }>();
+
+const voteCardLiveRef = ref<{ refreshSyndicats: () => Promise<void> } | null>(null);
+defineExpose({
+  refreshSyndicats: () => voteCardLiveRef.value?.refreshSyndicats(),
+});
 </script>
 
 <template>
   <div class="w-full">
     <VoteCardLive
+      ref="voteCardLiveRef"
       v-if="props.currentVoteStatus === 'success' && displayCurrentVote"
       :vote="displayCurrentVote"
       :user="props.user"

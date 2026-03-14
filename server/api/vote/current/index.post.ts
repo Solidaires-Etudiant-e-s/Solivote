@@ -82,17 +82,23 @@ export default defineEventHandler(async (event) => {
     }
   }
 
-  if (!syndicat.mandats?.length) {
+  const mandatRecord = await prisma.mandat.findUnique({
+    where: {
+      syndicatId_rencontreId: {
+        syndicatId: syndicat.id,
+        rencontreId: en_vote.rencontreId,
+      },
+    },
+  });
+
+  if (!mandatRecord) {
     throw createError({
       statusCode: 400,
       statusMessage: "Syndicat has no mandats for current rencontre",
     });
   }
 
-  const expectedMandats = syndicat.mandats.reduce(
-    (sum, mandat) => sum + Number(mandat.mandat ?? 0),
-    0,
-  );
+  const expectedMandats = mandatRecord.mandat;
   if (total_mandats !== expectedMandats) {
     throw createError({
       statusCode: 400,

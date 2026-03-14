@@ -21,10 +21,10 @@ const { data: currentVote, status: currentVoteStatus } =
   });
 const { data: currentRencontre, status: currentRencontreStatus } =
   await useLazyFetch("/api/rencontre/current", { key: "rencontre-current" });
-const { data: syndicat, status: syndicatStatus } = await useLazyFetch(
+const { data: syndicat, status: syndicatStatus, execute: syndicatExecute } = await useLazyFetch(
   "/api/syndicat/current",
 );
-const { data: syndicatsCurrent } = await useLazyFetch(
+const { data: syndicatsCurrent, execute: syndicatsCurrentExecute } = await useLazyFetch(
   "/api/syndicat/current/all",
 );
 const { data: syndicatsRemaining, execute: syndicatsRemainingExecute } =
@@ -32,6 +32,7 @@ const { data: syndicatsRemaining, execute: syndicatsRemainingExecute } =
 
 const wsStatus = ref("disconnected");
 let voteStream: EventSource | null = null;
+let rencontreStream: EventSource | null = null;
 const { sync } = usePatchedFetchState();
 
 const syncVotesFromServer = async () => {
@@ -59,6 +60,12 @@ const syncCurrentRencontreFromServer = async () => {
   );
 };
 
+const syncSyndicatFromServer = async () => {
+  await Promise.all([syndicatExecute(), syndicatsCurrentExecute()]);
+  voteCardLiveRef.value?.refreshSyndicats();
+  voteCurrentAdminRef.value?.refreshSyndicats();
+};
+
 const connectVoteStream = () => {
   wsStatus.value = "connecting";
   voteStream = new EventSource("/api/sse/vote");
@@ -80,12 +87,25 @@ const connectVoteStream = () => {
   });
 };
 
+const connectRencontreStream = () => {
+  rencontreStream = new EventSource("/api/sse/rencontre");
+  rencontreStream.addEventListener("rencontre", async (event) => {
+    if (!(event instanceof MessageEvent)) return;
+    if (event.data === "rencontre") {
+      await syncSyndicatFromServer();
+      await syncCurrentRencontreFromServer();
+    }
+  });
+};
+
 onMounted(() => {
   connectVoteStream();
+  connectRencontreStream();
 });
 
 onBeforeUnmount(() => {
   voteStream?.close();
+  rencontreStream?.close();
 });
 
 const updateAll = async () => {
@@ -99,6 +119,8 @@ const updateAll = async () => {
 const toast = useToast();
 const isLaunchingVoteId = ref<number | null>(null);
 const isDeletingVote = ref(false);
+const voteCardLiveRef = ref<{ refreshSyndicats: () => Promise<void> } | null>(null);
+const voteCurrentAdminRef = ref<{ refreshSyndicats: () => Promise<void> } | null>(null);
 
 const cloneValue = <T,>(value: T): T => structuredClone(value);
 const normalizeSyndicat = (value: unknown): ResolvedSyndicat | null => {
@@ -383,7 +405,7 @@ const updateVoteModalOpen = (value: boolean) => {
     <div class="w-full max-w-4xl mx-auto px-3 sm:px-4">
       <p v-if="userStatus !== 'success'">Chargement des informations...</p>
       <template v-else-if="user!.role === 'syndicat'">
-        <VoteCardLive v-if="
+        <VoteCardLive ref="voteCardLiveRef" v-if="
           currentVoteStatus === 'success' &&
           currentVote &&
           syndicatStatus === 'success' &&
@@ -393,7 +415,7 @@ const updateVoteModalOpen = (value: boolean) => {
           @vote="(type, _selected) => voter(type as TypeChoix)"
           @panacher="(panache, _selected) => panacher(panache as Panache)" />
       </template>
-      <VoteCurrentAdmin v-else-if="user!.role === 'admin'" :execute="updateAll" :current-vote="currentVote" :user="user"
+      <VoteCurrentAdmin ref="voteCurrentAdminRef" v-else-if="user!.role === 'admin'" :execute="updateAll" :current-vote="currentVote" :user="user"
         :current-vote-status="currentVoteStatus" :syndicats-remaining="syndicatsRemaining"
         @vote="(type, selected) => voter(type as TypeChoix, selected)" @panacher="
           (panache, selected) => panacher(panache as Panache, selected)

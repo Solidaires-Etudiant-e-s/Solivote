@@ -14,9 +14,11 @@ const props = withDefaults(
   },
 );
 
-const { data: syndicats, status: syndicatsStatus } = await useLazyFetch(
+const { data: syndicats, status: syndicatsStatus, execute: syndicatsExecute } = await useLazyFetch(
   "/api/syndicat/current/all",
 );
+
+defineExpose({ refreshSyndicats: syndicatsExecute });
 
 const syndicatsName = computed(() => {
   const s = (syndicats.value as Syndicat[] | null)?.map((e) => e.nom) ?? [];
