@@ -16,11 +16,6 @@ const optimisticallyStopped = ref(false);
 const displayCurrentVote = computed(() =>
   optimisticallyStopped.value ? null : props.currentVote,
 );
-const remainingCount = computed(() => {
-  const current = displayCurrentVote.value;
-  if (!current) return syndicatCount.value;
-  return syndicatCount.value - current.choix.length;
-});
 
 watch(
   () => props.currentVote?.id,
@@ -93,8 +88,8 @@ defineExpose({
           :disabled="isStoppingVote"
           @click.prevent="stop()"
         >
-          Clôturer ({{ remainingCount }} restant{{
-            remainingCount === 1 ? "" : "s"
+          Clôturer ({{ props.syndicatsRemaining?.length }} restant{{
+            props.syndicatsRemaining?.length === 1 ? "" : "s"
           }})
         </UButton>
       </template>
