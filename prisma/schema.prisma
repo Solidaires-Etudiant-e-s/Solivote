@@ -9,7 +9,7 @@ datasource db {
 model Vote {
   id           Int           @id @default(autoincrement())
   date         DateTime      @default(now())
-  nom          String
+  nom          String        @db.Text
   type         TypeVote
   description  String?       @db.Text
   choix        Choix[]
