@@ -1,5 +1,6 @@
 <script setup lang="ts">
 useHead({
+  title: "SoliVote",
   link: [
     { rel: "icon", type: "image/x-icon", href: "/favicon.ico" },
     {
