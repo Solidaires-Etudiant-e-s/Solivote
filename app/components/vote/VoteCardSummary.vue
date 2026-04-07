@@ -60,6 +60,7 @@ const choiceGroups = computed(() => {
       if (!base[y.type]) {
         base[y.type] = [];
       }
+      console.log(i);
       base[y.type]!.push({ syndicat: i.syndicat, mandat: y.mandat });
     }
   }

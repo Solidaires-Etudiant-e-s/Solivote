@@ -8,7 +8,7 @@ const props = defineProps<{
 
 <template>
   <UCard class="w-full">
-    <div class="flex flex-col gap-1 w-full">
+    <!-- <div class="flex flex-col gap-1 w-full">
       <div class="text-base font-serif flex items-start justify-between gap-2">
         <span class="`wrap-break-word`">{{ props.vote.nom }}</span>
         <UBadge class="shrink-0">{{ props.vote.type }}</UBadge>
@@ -19,9 +19,36 @@ const props = defineProps<{
       <div v-if="props.vote.type !== TypeVote.STANDARD" class="flex gap-2 flex-wrap">
         <template v-for="possibilite in props.vote.possibilites ?? []" :key="possibilite.id">
           <UBadge>{{ possibilite.nom }}</UBadge>
-        </template>
+        </template> -->
+    <template #header>
+      <div>
+        <div class="flex flex-col gap-1 w-full">
+          <div
+            class="text-base font-serif flex items-start justify-between gap-2"
+          >
+            <span class="`wrap-break-word`">{{ props.vote.nom }}</span>
+            <UBadge class="shrink-0">{{ props.vote.type }}</UBadge>
+          </div>
+          <div
+            v-if="props.vote.description"
+            class="text-xs text-muted `wrap-break-word`"
+          >
+            {{ props.vote.description }}
+          </div>
+          <div
+            v-if="props.vote.type !== TypeVote.STANDARD"
+            class="flex gap-2 flex-wrap"
+          >
+            <template
+              v-for="possibilite in props.vote.possibilites ?? []"
+              :key="possibilite.id"
+            >
+              <UBadge>{{ possibilite.nom }}</UBadge>
+            </template>
+          </div>
+        </div>
       </div>
-    </div>
+    </template>
     <template #footer v-if="$slots.actions">
       <slot name="actions" />
     </template>
