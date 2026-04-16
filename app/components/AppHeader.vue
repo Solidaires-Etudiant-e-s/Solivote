@@ -3,13 +3,11 @@ const props = defineProps<{
   title: string;
   user?: { name?: string; role: string } | null;
   status?: string;
-  sseStatus?: string;
+  sseStatus?: string | null;
 }>();
 
-const displayName = computed(() => {
-  const name = props.user?.name?.trim();
-  if (!name) return "";
-  return name.charAt(0).toUpperCase() + name.slice(1);
+const display = computed(() => {
+  return displayName(props.user?.name)
 });
 </script>
 
@@ -23,19 +21,17 @@ const displayName = computed(() => {
     </template>
 
     <template #right>
-      <template v-if="props.status && props.status === 'success'">
-        <UBadge v-if="props.sseStatus === 'connected'">Connecté</UBadge>
-        <UBadge v-else-if="props.sseStatus === 'connecting'" color="warning">
-          Connexion...
-        </UBadge>
-        <UBadge v-else color="error">Déconnecté</UBadge>
-
-        <UUser
-          v-if="props.user && displayName"
-          :name="displayName"
-          class="hidden sm:flex"
-        />
-      </template>
+      <UBadge v-if="props.sseStatus === 'connected'">Connecté</UBadge>
+      <UBadge v-else-if="props.sseStatus === 'connecting'" color="warning">
+        Connexion...
+      </UBadge>
+      <UBadge v-else-if="props.sseStatus" color="error">Déconnecté</UBadge>
+      <UUser
+        v-if="props.status && props.status === 'success' && props.user && display"
+        :name="display"
+        class="hidden sm:flex"
+      />
+      <UIcon v-else name="mingcute:loading-fill" class="animate-spin"></UIcon>
     </template>
   </UHeader>
 </template>

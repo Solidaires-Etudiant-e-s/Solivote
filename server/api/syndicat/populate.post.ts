@@ -1,7 +1,3 @@
-import { getSyndicats } from "~~/server/utils/syndicats";
-import { prisma } from "../../utils/prisma";
-import { getUser, Groupe } from "../../utils/role";
-
 export default defineEventHandler(async (event) => {
   const { role } = await getUser(event);
   if (role !== Groupe.ADMIN) {

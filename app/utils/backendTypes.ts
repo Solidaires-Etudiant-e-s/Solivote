@@ -70,6 +70,8 @@ export type Syndicat = {
   id: number;
   nom: string;
   mandats: Mandat[];
+  defaultMandats: Number;
+  actif: boolean;
 };
 
 export type Mandat = {

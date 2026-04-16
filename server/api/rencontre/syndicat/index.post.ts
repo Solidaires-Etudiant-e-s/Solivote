@@ -1,7 +1,4 @@
 import { z } from "zod";
-import { prisma } from "../../../utils/prisma";
-import { getUser, Groupe } from "../../../utils/role";
-import { broadcastRencontre } from "../../../utils/sse";
 
 const syndicatsSchema = z.object({
   id: z.number(),
@@ -31,6 +28,7 @@ export default defineEventHandler(async (event) => {
     select: {
       id: true,
       nom: true,
+      defaultMandats: true,
     },
   });
 
@@ -51,6 +49,7 @@ export default defineEventHandler(async (event) => {
         data: {
           syndicatId: byName.get(syndicat.nom)!.id,
           rencontreId: data.id,
+          mandat: byName.get(syndicat.nom)!.defaultMandats
         },
       }),
     ),

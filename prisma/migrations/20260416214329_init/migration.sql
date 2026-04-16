@@ -1,0 +1,3 @@
+-- AlterTable
+ALTER TABLE `Syndicat` ADD COLUMN `actif` BOOLEAN NOT NULL DEFAULT true,
+    ADD COLUMN `defaultMandats` INTEGER UNSIGNED NOT NULL DEFAULT 0;

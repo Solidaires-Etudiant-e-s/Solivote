@@ -13,6 +13,11 @@ const isSuperadmin = computed(() => user.value?.role === "admin");
 
 const baseItems: NavigationMenuItem[] = [
   {
+    label: "Syndicats",
+    icon: "mingcute:home-3-line",
+    to: "/syndicats",
+  },
+  {
     label: "Rencontres",
     icon: "mingcute:history-anticlockwise-line",
     to: "/rencontres",
@@ -147,10 +152,10 @@ const createRencontre = async () => {
   <UDashboardGroup>
     <UDashboardSidebar toggle-side="left">
       <template #header>
-        <div class="flex items-center justify-center">
+        <NuxtLink class="flex items-center justify-center" to="/">
           <LogoItem class="h-10 w-auto" />
           <h1 class="ml-4 font-bold text-2xl">SoliVote</h1>
-        </div>
+        </NuxtLink>
       </template>
 
       <template #default="{ collapsed }">

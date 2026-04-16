@@ -40,10 +40,12 @@ model Choix {
 }
 
 model Syndicat {
-  id      Int      @id @default(autoincrement())
-  nom     String   @unique
-  mandats Mandat[] @relation()
-  choix   Choix[]
+  id             Int      @id @default(autoincrement())
+  nom            String   @unique
+  mandats        Mandat[] @relation()
+  choix          Choix[]
+  defaultMandats Int      @default(0) @db.UnsignedInt
+  actif          Boolean  @default(true)
 }
 
 model Mandat {

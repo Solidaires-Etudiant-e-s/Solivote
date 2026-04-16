@@ -7,10 +7,8 @@ const props = defineProps<{
   syndicatsRemaining?: Syndicat[] | null;
 }>();
 
-const { data: syndicats } = await useLazyFetch("/api/syndicat");
 const { data: votesCache } = useNuxtData<Vote[]>("votes");
 const { data: currentVoteCache } = useNuxtData<Vote | null>("vote-current");
-const syndicatCount = computed(() => syndicats.value?.length ?? 0);
 const isStoppingVote = ref(false);
 const optimisticallyStopped = ref(false);
 const displayCurrentVote = computed(() =>

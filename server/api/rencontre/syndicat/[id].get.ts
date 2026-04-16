@@ -22,6 +22,7 @@ export default defineEventHandler(async (event) => {
       id: {
         notIn: presentIds.length ? presentIds : undefined,
       },
+      actif: true
     },
     select: {
       nom: true,

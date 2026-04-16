@@ -1,5 +1,3 @@
-import { prisma } from "../../../utils/prisma";
-
 export default defineEventHandler(async (_event) => {
   const rencontre = await currentRencontre();
   if (!rencontre) {
