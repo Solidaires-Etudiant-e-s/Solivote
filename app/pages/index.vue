@@ -123,7 +123,7 @@ const voteCardLiveRef = ref<{ refreshSyndicats: () => Promise<void> } | null>(nu
 const voteCurrentAdminRef = ref<{ refreshSyndicats: () => Promise<void> } | null>(null);
 
 const cloneValue = <T,>(value: T): T => structuredClone(value);
-const normalizeSyndicat = (value: unknown): ResolvedSyndicat | null => {
+const normalizeSyndicat = (value: unknown): Syndicat | null => {
   if (!value || typeof value !== "object") return null;
   const raw = value as Record<string, unknown>;
   const id = Number(raw.id);
@@ -273,11 +273,7 @@ const panacher = async (
 ) => {
   const body = {
     choix: [] as Array<{ type: string | number; mandat: number }>,
-    syndicat: null as {
-      id: number;
-      nom: string;
-      mandats: Array<{ mandat: number; rencontreId?: number }>;
-    } | null,
+    syndicat: null as Syndicat | null,
   };
 
   for (const type in panache) {
@@ -437,6 +433,41 @@ const updateVoteModalOpen = (value: boolean) => {
     voteEdited.value = null;
   }
 };
+
+const condorcet = async (
+  choiceMeta: {
+    key: number;
+    label: string;
+  }[],
+  selected: string | undefined = undefined,
+) => {
+  const body = {
+    choix: [] as Array<{ vote: number[]; mandat: number }>,
+    syndicat: null as Syndicat | null,
+  };
+
+  body.syndicat = await resolveSyndicat(selected);
+
+  body.choix.push({
+    vote: choiceMeta.map((e) => e.key),
+    mandat: body.syndicat!.mandats[0]!.mandat,
+  });
+
+  console.log(body);
+
+  try {
+    await $fetch(`/api/vote/current`, {
+      method: "POST",
+      body,
+    });
+  } catch {
+    toast.add({
+      title: "Vote non pris en compte",
+      description: "Une erreur est survenue. Réessayez.",
+      color: "error",
+    });
+  }
+}
 </script>
 
 <template>
@@ -457,13 +488,17 @@ const updateVoteModalOpen = (value: boolean) => {
           syndicat.mandats.length > 0
         " :vote="currentVote" :user="user" :execute="updateAll" :syndicats-remaining="syndicatsRemaining"
           @vote="(type, _selected) => voter(type as TypeChoix)"
-          @panacher="(panache, _selected) => panacher(panache as Panache)" />
+          @panacher="(panache, _selected) => panacher(panache as Panache)"
+          @condorcet="(choiceMeta, _vote_pour) => condorcet(choiceMeta)"
+        />
       </template>
       <VoteCurrentAdmin ref="voteCurrentAdminRef" v-else-if="user!.role === 'admin'" :execute="updateAll" :current-vote="currentVote" :user="user"
         :current-vote-status="currentVoteStatus" :syndicats-remaining="syndicatsRemaining"
         @vote="(type, selected) => voter(type as TypeChoix, selected)" @panacher="
           (panache, selected) => panacher(panache as Panache, selected)
-        " />
+        "
+        @condorcet="(choiceMeta, selected) => condorcet(choiceMeta, selected)"
+      />
     </div>
 
     <USeparator class="w-full my-5" v-if="currentVote" />

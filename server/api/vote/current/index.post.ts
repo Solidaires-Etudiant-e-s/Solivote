@@ -1,12 +1,8 @@
 import { z } from "zod";
 import { StatusVote } from "@prisma/client";
-import { prisma } from "../../../utils/prisma";
-import { enVote } from "../../../utils/enVote";
-import { currentSyndicat } from "../../../utils/currentSyndicat";
-import { broadcastVote } from "../../../utils/sse";
-import { sanitizeChoix } from "../../../utils/sanitizeChoix";
 
 const userSchema = z.object({
+  type: z.enum(["condorcet"]).nullable,
   choix: z.array(
     z.object({
       type: z.union([z.string().min(1), z.number().int().min(0)]),

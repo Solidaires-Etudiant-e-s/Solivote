@@ -59,6 +59,11 @@ type Panache = Record<string, number>;
 const emit = defineEmits<{
   (event: "vote", type: string, selected: string): void;
   (event: "panacher", values: Panache, selected: string): void;
+  (
+    event: "condorcet",
+    values: { key: number; label: string }[],
+    selected: string,
+  ): void;
 }>();
 
 const voteCardLiveRef = ref<{ refreshSyndicats: () => Promise<void> } | null>(null);
@@ -78,6 +83,9 @@ defineExpose({
       :syndicats-remaining="syndicatsRemaining"
       @vote="(type, selected) => emit('vote', type, selected)"
       @panacher="(panache, selected) => emit('panacher', panache, selected)"
+      @condorcet="
+        (choiceMeta, vote_pour) => emit('condorcet', choiceMeta, vote_pour)
+      "
     >
       <template #actions>
         <UButton

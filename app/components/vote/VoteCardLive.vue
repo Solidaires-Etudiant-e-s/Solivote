@@ -28,6 +28,11 @@ const syndicatsName = computed(() => {
 const emit = defineEmits<{
   (event: "vote", type: string, selected: string): void;
   (event: "panacher", values: Panache, selected: string): void;
+  (
+      event: "condorcet",
+      values: { key: number; label: string }[],
+      selected: string,
+    ): void;
 }>();
 
 const choiceGroups = computed(() => {
@@ -48,26 +53,28 @@ const choiceGroups = computed(() => {
   return base;
 });
 
-const choiceMeta = computed(() => {
-  const base = [];
-  if (props.vote.type === TypeVote.STANDARD) {
-    base.push({ key: "POUR", label: "Pour" });
-    base.push({ key: "CONTRE", label: "Contre" });
-    base.push({ key: "ABSTENTION", label: "Abstention" });
-    base.push({ key: "NPPV", label: "NPPV" });
-  } else if (props.vote.type === TypeVote.EN_CONTRE) {
-    for (const i of props.vote.possibilites ?? []) {
-      base.push({ key: i.id, label: i.nom });
+const choiceMeta = ref(
+  computed(() => {
+    const base = [];
+    if (props.vote.type === TypeVote.STANDARD) {
+      base.push({ key: "POUR", label: "Pour" });
+      base.push({ key: "CONTRE", label: "Contre" });
+      base.push({ key: "ABSTENTION", label: "Abstention" });
+      base.push({ key: "NPPV", label: "NPPV" });
+    } else if (props.vote.type === TypeVote.EN_CONTRE) {
+      for (const i of props.vote.possibilites ?? []) {
+        base.push({ key: i.id, label: i.nom });
+      }
+      base.push({ key: "ABSTENTION", label: "Abstention" });
+      base.push({ key: "NPPV", label: "NPPV" });
+    } else {
+      for (const i of props.vote.possibilites ?? []) {
+        base.push({ key: i.id, label: i.nom });
+      }
     }
-    base.push({ key: "ABSTENTION", label: "Abstention" });
-    base.push({ key: "NPPV", label: "NPPV" });
-  } else {
-    for (const i of props.vote.possibilites ?? []) {
-      base.push({ key: i.id, label: i.nom });
-    }
-  }
-  return base;
-});
+    return base;
+  }).value,
+);
 
 type Panache = Record<string, number>;
 
@@ -169,11 +176,13 @@ watch(vote_pour, () => {
     </template>
 
     <div class="flex flex-col gap-6">
+
       <div v-if="props.user?.role === 'admin' && syndicatsStatus === 'success'"
         class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-4">
         Voter à la place de :
         <UInputMenu v-model="vote_pour" :items="syndicatsName" class="w-full sm:w-auto" />
       </div>
+
       <div v-if="(props.user?.role === 'syndicat' && availableMandats > 1) || vote_pour"
         class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-4">
         <span>Panachage ({{ availableMandats }} mandat{{
@@ -181,7 +190,8 @@ watch(vote_pour, () => {
           }})</span>
         <USwitch v-model="en_panachage" />
       </div>
-      <div v-for="group in choiceMeta" :key="group.key" class="flex flex-col gap-2">
+
+      <div v-if="vote.type !== TypeVote.CONDORCET" v-for="group in choiceMeta" :key="group.key" class="flex flex-col gap-2">
         <div class="flex items-start gap-3">
           <div v-if="props.user?.role === 'syndicat' || vote_pour" class="shrink-0 self-center flex items-center">
             <UButton v-if="!en_panachage" :icon="selectedChoiceKey === String(group.key)
@@ -214,6 +224,19 @@ watch(vote_pour, () => {
           </div>
         </div>
       </div>
+
+      <template v-else>
+        <draggable v-model="choiceMeta" :animation="150">
+          <div v-for="group in choiceMeta" :key="group.key" class="flex flex-col gap-2 drag-item">
+            {{ group.label }}
+          </div>
+        </draggable>
+        <UButton v-if="props.user?.role === 'syndicat' || vote_pour" class="w-full sm:w-auto"
+          @click="emit('condorcet', choiceMeta, vote_pour)">
+          Voter !
+        </UButton>
+      </template>
+
       <UButton v-if="en_panachage" class="w-full sm:w-auto" :disabled="sum_panachage !== availableMandats"
         @click="emit('panacher', panachage, vote_pour)">
         Panacher !
@@ -221,7 +244,8 @@ watch(vote_pour, () => {
           manque {{ availableMandats - sum_panachage }} mandats
         </template>
       </UButton>
-                  <slot name="actions" />
+
+      <slot name="actions" />
 
     </div>
     <template #footer v-if="syndicatsRemaining && syndicatsRemaining.length > 0">
