@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { TableColumn } from "@nuxt/ui";
-import { type Rencontre } from "~/utils/backendTypes";
-import getRencontreName from "~/utils/getRencontreName";
 
 const props = withDefaults(
   defineProps<{
     rencontre: Rencontre;
     user?: { role: string } | null;
     execute: (self?: boolean) => Promise<void> | void;
+    quorum: { actuel: number; requis: number; };
   }>(),
   {
     user: null,
@@ -220,6 +219,12 @@ const updateMandat = async (
         />
       </template>
     </UTable>
+
+    <div class="flex justify-center items-center">
+      Quorum: {{props.quorum.actuel}} sur les {{props.quorum.requis}} requis
+
+      <UIcon name="mingcute:alert-line"/>
+    </div>
 
     <template #footer>
       <div class="flex justify-around items-center">

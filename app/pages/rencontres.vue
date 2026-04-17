@@ -4,6 +4,7 @@ import { toRaw, type Ref } from "vue";
 const { data: rencontres, status: rencontreStatus } =
   useLazyFetch("/api/rencontre");
 const { data: user, status: userStatus } = await useLazyFetch("/api/role");
+const { data: syndicats, status: syndicatsStatus } = await useLazyFetch("/api/syndicat");
 const { sync } = usePatchedFetchState();
 
 const syncRencontresFromServer = async () => {
@@ -266,6 +267,7 @@ const syndicat = ref<string[][]>([]);
         :user="user"
         :rencontre
         :execute="updateAll"
+        :quorum="{actuel: rencontre.mandats.length, requis: Math.floor((syndicats?.filter((s) => s.actif)?.length)! / 2)}"
       >
         <div v-if="user!.role === 'admin'" class="flex justify-center gap-5">
           <UForm
