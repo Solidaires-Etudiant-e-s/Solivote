@@ -35,6 +35,8 @@ let voteStream: EventSource | null = null;
 let rencontreStream: EventSource | null = null;
 const { sync } = usePatchedFetchState();
 
+const laposte = ref()
+
 const syncVotesFromServer = async () => {
   await sync(
     votes as Ref<VotePayload[] | undefined>,
@@ -356,6 +358,17 @@ const fuzzyMatch = (query: string, target: string): boolean => {
 const fuzzyFilterVotes = (list: VotePayload[], query: string) => {
   const q = query.trim();
   if (!q) return list;
+
+  if (q === 'laposte') {
+    console.log("Laposte !!!!")
+    laposte.value = new Audio('/laposte.mp3')
+    laposte.value.volume = 0.01
+    laposte.value.play()
+  } else {
+    laposte.value?.pause()
+    laposte.value = null
+  }
+
   return list.filter(
     (vote) =>
       fuzzyMatch(q, vote.nom) ||
@@ -464,6 +477,10 @@ const updateVoteModalOpen = (value: boolean) => {
         @vote="(type, selected) => voter(type as TypeChoix, selected)" @panacher="
           (panache, selected) => panacher(panache as Panache, selected)
         " />
+    </div>
+
+    <div class="flex justify-center">
+      <img v-if="laposte" src="https://cdn.discordapp.com/attachments/445213222426116145/1020330132508000348/drapeau.gif?ex=69e38b7c&is=69e239fc&hm=929ff142ed204a1561fa3cb481cbd003dc4695b3a260769f486f40222aa0b221&"/>
     </div>
 
     <USeparator class="w-full my-5" v-if="currentVote" />
