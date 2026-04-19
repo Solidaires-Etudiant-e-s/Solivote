@@ -1,16 +1,12 @@
 import { TypeVote } from "@prisma/client";
 import { z } from "zod";
-import { prisma } from "../../utils/prisma";
-import { getUser, Groupe } from "../../utils/role";
-import { broadcastVote } from "../../utils/sse";
-import { sanitizeChoix } from "../../utils/sanitizeChoix";
 
 const userSchema = z
   .object({
     nom: z.string().min(1),
     description: z.string().nullable(),
     possibilites: z.array(z.string().min(1)),
-    type: z.nativeEnum(TypeVote),
+    type: z.enum(TypeVote),
   })
   .refine((input) => {
     if (input.type != TypeVote.CONDORCET) return true;
@@ -46,7 +42,9 @@ export default defineEventHandler(async (event) => {
         },
       },
       rencontre: {
-        connect: current,
+        connect: {
+          id: current.id
+        }
       },
     },
     include: {
@@ -62,11 +60,5 @@ export default defineEventHandler(async (event) => {
 
   await broadcastVote("vote");
 
-  return {
-    ...result,
-    choix: result.choix.map((choice) => ({
-      ...choice,
-      choix: sanitizeChoix(choice.choix),
-    })),
-  };
+  return result
 });

@@ -9,6 +9,8 @@ const { data: currentRencontre, execute: updateCurrentRencontre } =
 const { data: user } = await useLazyFetch("/api/role");
 const { data: lasts } = await useLazyFetch("/api/rencontre/last");
 
+const { sync } = usePatchedFetchState();
+
 const isSuperadmin = computed(() => user.value?.role === "admin");
 
 const baseItems: NavigationMenuItem[] = [
@@ -32,7 +34,7 @@ const items = computed<NavigationMenuItem[][]>(() => {
       {
         label: getRencontreName(currentRencontre.value),
         slot: "current-event",
-        to: "/",
+        to: "/main/current",
       },
     ]);
   }
@@ -40,6 +42,7 @@ const items = computed<NavigationMenuItem[][]>(() => {
   if (lasts.value) {
     const lastRencontre: NavigationMenuItem[] = lasts.value.map((last) => ({
       label: last.nom,
+      to: `/main/${last.id}`
     }));
     final.push(lastRencontre);
   }
@@ -145,6 +148,30 @@ const createRencontre = async () => {
   } finally {
     isCreatingRencontre.value = false;
   }
+};
+
+let rencontreStream: EventSource | null = null;
+
+const connectRencontreStream = () => {
+  rencontreStream = new EventSource("/api/sse/rencontre");
+  rencontreStream.addEventListener("rencontre", async (event) => {
+    if (!(event instanceof MessageEvent)) return;
+    if (event.data === "rencontre") {
+      await syncRencontreFromServer();
+    }
+  });
+};
+
+onMounted(() => {
+  connectRencontreStream();
+});
+
+const syncRencontreFromServer = async () => {
+  await sync(
+    currentRencontre,
+    () => $fetch(`/api/rencontre/current`),
+    "value",
+  );
 };
 </script>
 

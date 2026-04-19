@@ -1,8 +1,4 @@
 import { StatusRencontre } from "@prisma/client";
-import { prisma } from "../../../utils/prisma";
-import { getUser, Groupe } from "../../../utils/role";
-import { currentRencontre } from "../../../utils/currentRencontre";
-import { broadcastRencontre } from "../../../utils/sse";
 export default defineEventHandler(async (event) => {
   const { role } = await getUser(event);
   if (role !== Groupe.ADMIN) {

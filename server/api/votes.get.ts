@@ -1,50 +1,40 @@
-import { prisma } from "../utils/prisma";
-import { sanitizeChoix } from "../utils/sanitizeChoix";
+import { Vote } from "@prisma/client";
 
-export default defineEventHandler(async (_event) => {
+export default defineEventHandler(async (event) => {
   const current = await currentRencontre();
 
-  if (!current) {
-    const votes = await prisma.vote.findMany({
+  const id = Number(getQuery(event).id)
+  if (Number.isInteger(id) && id > 0) {
+    return await prisma.vote.findMany({
+      where: {
+        rencontreId: id
+      },
       include: {
         choix: {
           include: {
             syndicat: true,
           },
         },
+        possibilites: true,
       },
     });
-
-    return votes.map((vote) => ({
-      ...vote,
-      choix: vote.choix.map((choice) => ({
-        ...choice,
-        choix: sanitizeChoix(choice.choix),
-      })),
-    }));
   }
 
-  const votes = await prisma.vote.findMany({
-    where: {
-      rencontre: {
-        is: current,
+  if (current) {
+    return await prisma.vote.findMany({
+      where: {
+        rencontreId: current.id
       },
-    },
-    include: {
-      choix: {
-        include: {
-          syndicat: true,
+      include: {
+        choix: {
+          include: {
+            syndicat: true,
+          },
         },
+        possibilites: true,
       },
-      possibilites: true,
-    },
-  });
+    });
+  }
 
-  return votes.map((vote) => ({
-    ...vote,
-    choix: vote.choix.map((choice) => ({
-      ...choice,
-      choix: sanitizeChoix(choice.choix),
-    })),
-  }));
+  return null
 });

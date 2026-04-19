@@ -64,6 +64,8 @@ export type Choix = {
   voteId?: number;
   vote?: Vote;
   choix: Array<{ type: string | number; mandat: number }>;
+  defaultMandats: number;
+  actif: boolean;
 };
 
 export type Syndicat = {

@@ -5,11 +5,5 @@ export default defineEventHandler(async () => {
 
   if (!vote) return null;
 
-  return {
-    ...vote,
-    choix: vote.choix.map((choice) => ({
-      ...choice,
-      choix: sanitizeChoix(choice.choix),
-    })),
-  };
+  return vote
 });

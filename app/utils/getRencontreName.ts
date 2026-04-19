@@ -1,4 +1,6 @@
-export default function (rencontre: Rencontre) {
+import type { TypeRencontre } from "#imports";
+
+export default function (rencontre: {nom: string, dateDebut: string, type: TypeRencontre}) {
   if (rencontre.nom && rencontre.nom.trim()) {
     return rencontre.nom.trim();
   }
