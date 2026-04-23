@@ -45,10 +45,10 @@ const laposte = ref()
 
 watchEffect(() => {
   if (rencontreStatus.value === "success" && rencontre.value == undefined) {
-    throw createError({
-      status: 404,
-      statusText: 'Rencontre Not Found',
-    })
+    // throw createError({
+    //   status: 404,
+    //   statusText: 'Rencontre Not Found',
+    // })
   }
 })
 
