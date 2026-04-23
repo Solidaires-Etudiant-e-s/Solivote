@@ -29,13 +29,13 @@ async function main() {
 
   const syndicats = await prisma.syndicat.createMany({
     data: [
-      { nom: "Bordeaux" },
+      { nom: "Bordeaux", defaultMandats: 5 },
       { nom: "Rennes" },
-      { nom: "Nantes" },
+      { nom: "Nantes", defaultMandats: 3 },
       { nom: "Lyon" },
       { nom: "Paris" },
       { nom: "Grenoble" },
-      { nom: "Marseille" },
+      { nom: "Marseille", actif: false },
     ],
   });
 
@@ -172,6 +172,15 @@ async function main() {
       const syndicat = allSyndicats[sIndex];
       let type;
 
+      const mandat = await prisma.mandat.findUnique({
+        where: {
+          syndicatId_rencontreId: {
+            syndicatId: syndicat.id,
+            rencontreId: vote.rencontreId,
+          }
+        }
+      })
+
       if (vIndex === tieVoteIndex) {
         // Force a single tie between POUR and CONTRE.
         type = sIndex % 2 === 0 ? TypeChoix.POUR : TypeChoix.CONTRE;
@@ -183,7 +192,7 @@ async function main() {
       choixData.push({
         syndicatId: syndicat.id,
         voteId: vote.id,
-        choix: type,
+        choix: [{type, mandat: mandat.mandat}],
       });
     }
   }
