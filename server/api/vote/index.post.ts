@@ -7,6 +7,7 @@ const userSchema = z
     description: z.string().nullable(),
     possibilites: z.array(z.string().min(1)),
     type: z.enum(TypeVote),
+    texteId: z.int()
   })
   .refine((input) => {
     if (input.type != TypeVote.CONDORCET) return true;

@@ -48,12 +48,9 @@ export type Vote = {
   nom: string;
   type: TypeVote;
   description: string | null;
-  content: string;
-  rencontreId: number;
   status: StatusVote;
   choix: Choix[];
   possibilites?: Possibilite[];
-  rencontre?: Rencontre;
 };
 
 export type Choix = {
@@ -64,15 +61,13 @@ export type Choix = {
   voteId?: number;
   vote?: Vote;
   choix: Array<{ type: string | number; mandat: number }>;
-  defaultMandats: number;
-  actif: boolean;
 };
 
 export type Syndicat = {
   id: number;
   nom: string;
   mandats: Mandat[];
-  defaultMandats: Number;
+  defaultMandats: number;
   actif: boolean;
 };
 
@@ -93,4 +88,12 @@ export type Rencontre = {
   status: StatusRencontre;
   mandats: Mandat[];
   votes: Vote[];
+};
+
+export type Texte = {
+  id: number;
+  titre: string;
+  votes: Vote[];
+  rencontre?: Rencontre;
+  rencontreId: number;
 };

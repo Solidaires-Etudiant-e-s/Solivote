@@ -1,7 +1,4 @@
 import { z } from "zod";
-import { prisma } from "../../utils/prisma";
-import { getUser, Groupe } from "../../utils/role";
-import { broadcastVote } from "../../utils/sse";
 
 const userSchema = z.object({
   id: z.number().int(),

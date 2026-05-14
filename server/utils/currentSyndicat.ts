@@ -12,6 +12,8 @@ export async function currentSyndicat(event: H3Event): Promise<
     } & {
       id: number;
       nom: string;
+      defaultMandats: number;
+      actif: boolean;
     })
   | null
 > {

@@ -1,37 +1,76 @@
 export default defineEventHandler(async (event) => {
-  const current = await currentRencontre();
-
   const id = Number(getQuery(event).id)
   if (Number.isInteger(id) && id > 0) {
-    return await prisma.vote.findMany({
+    // return await prisma.vote.findMany({
+    //   where: {
+    //     texte: {
+    //       rencontreId: id
+    //     }
+    //   },
+    //   include: {
+    //     choix: {
+    //       include: {
+    //         syndicat: true,
+    //       },
+    //     },
+    //     possibilites: true,
+    //     texte: true,
+    //   },
+    // });
+    return await prisma.texte.findMany({
       where: {
-        rencontreId: id
+        rencontreId: id,
       },
       include: {
-        choix: {
+        votes: {
           include: {
-            syndicat: true,
-          },
-        },
-        possibilites: true,
-      },
-    });
+            choix: {
+              include: {
+                syndicat: true
+              }
+            },
+            possibilites: true
+          }
+        }
+      }
+    })
   }
 
+  const current = await currentRencontre();
   if (current) {
-    return await prisma.vote.findMany({
+    // return await prisma.vote.findMany({
+    //   where: {
+    //     texte: {
+    //       rencontreId: current.id
+    //     }
+    //   },
+    //   include: {
+    //     choix: {
+    //       include: {
+    //         syndicat: true,
+    //       },
+    //     },
+    //     possibilites: true,
+    //     texte: true,
+    //   },
+    // });
+    return await prisma.texte.findMany({
       where: {
-        rencontreId: current.id
+        rencontreId: current.id,
       },
       include: {
-        choix: {
+        votes: {
           include: {
-            syndicat: true,
-          },
-        },
-        possibilites: true,
-      },
-    });
+            choix: {
+              include: {
+                syndicat: true
+              }
+            },
+            possibilites: true
+          }
+        }
+      }
+    })
   }
 
   return null
