@@ -1,9 +1,5 @@
 import { StatusVote, TypeVote } from "@prisma/client";
 import { z } from "zod";
-import { prisma } from "../../utils/prisma";
-import { getUser, Groupe } from "../../utils/role";
-import { sanitizeChoix } from "../../utils/sanitizeChoix";
-import { broadcastVote } from "../../utils/sse";
 
 const userSchema = z
   .object({

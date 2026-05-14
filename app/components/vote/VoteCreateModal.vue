@@ -109,9 +109,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
       method: isEditing.value ? "PUT" : "POST",
       body: isEditing.value
         ? {
-            id: props.vote!.id,
-            ...payload,
-          }
+          id: props.vote!.id,
+          ...payload,
+        }
         : payload,
     });
     toast.add({
@@ -136,12 +136,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 <template>
   <UModal :open="props.open" @update:open="emit('update:open', $event)">
     <template #content>
-      <UForm
-        :schema="schema"
-        :state="formState"
-        class="w-full"
-        @submit.prevent="onSubmit"
-      >
+      <UForm :schema="schema" :state="formState" class="w-full" @submit.prevent="onSubmit">
         <UCard>
           <template #header>
             <div class="text-lg font-semibold">
@@ -154,74 +149,33 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
 
           <div class="grid gap-4">
             <UFormField label="Titre du vote" name="nom">
-              <UInput
-                v-model="formState.nom"
-                placeholder="Ex. Adoption du budget 2026"
-              />
+              <UInput v-model="formState.nom" placeholder="Ex. Adoption du budget 2026" />
             </UFormField>
             <UFormField label="Type" name="type">
-              <USelect
-                v-model="formState.type"
-                :items="Object.values(TypeVote)"
-              />
+              <USelect v-model="formState.type" :items="Object.values(TypeVote)" />
             </UFormField>
 
-            <UFormField
-              v-if="formState.type === TypeVote.CONDORCET"
-              label="Choix"
-              name="possibilites"
-            >
-              <UInputTags
-                v-model="formState.possibilites"
-                placeholder="Choix du vote condorcet"
-              />
+            <UFormField v-if="formState.type === TypeVote.CONDORCET" label="Choix" name="possibilites">
+              <UInputTags v-model="formState.possibilites" placeholder="Choix du vote condorcet" />
             </UFormField>
 
-            <UFormField
-              v-if="formState.type === TypeVote.EN_CONTRE"
-              label="Choix"
-              name="possibilites"
-            >
-              <UInputTags
-                v-model="formState.possibilites"
-                :max="2"
-                placeholder="Deux choix pour le vote en contre"
-              />
+            <UFormField v-if="formState.type === TypeVote.EN_CONTRE" label="Choix" name="possibilites">
+              <UInputTags v-model="formState.possibilites" :max="2" placeholder="Deux choix pour le vote en contre" />
             </UFormField>
 
-            <UFormField
-              label="Résumé (optionel)"
-              name="description"
-              help="Affiché dans la liste (1–2 phrases)."
-            >
-              <UTextarea
-                v-model="formState.description"
-                class="w-full"
-                placeholder="Ex. Vote de principe sur la proposition présentée."
-                :rows="2"
-              />
+            <UFormField label="Résumé (optionel)" name="description" help="Affiché dans la liste (1–2 phrases).">
+              <UTextarea v-model="formState.description" class="w-full"
+                placeholder="Ex. Vote de principe sur la proposition présentée." :rows="2" />
             </UFormField>
           </div>
 
           <template #footer>
-            <div
-              class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3"
-            >
-              <UButton
-                color="neutral"
-                variant="ghost"
-                class="w-full sm:w-auto"
-                @click="close"
-              >
+            <div class="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 sm:gap-3">
+              <UButton color="neutral" variant="ghost" class="w-full sm:w-auto" @click="close">
                 Annuler
               </UButton>
-              <UButton
-                type="submit"
-                color="primary"
-                class="w-full sm:w-auto"
-                :loading="isSubmitting"
-                :disabled="isSubmitting"
-              >
+              <UButton type="submit" color="primary" class="w-full sm:w-auto" :loading="isSubmitting"
+                :disabled="isSubmitting">
                 {{ isEditing ? "Enregistrer" : "Créer le vote" }}
               </UButton>
             </div>
