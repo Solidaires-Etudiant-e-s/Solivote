@@ -86,7 +86,7 @@ export default defineEventHandler(async (event) => {
     where: {
       syndicatId_rencontreId: {
         syndicatId: syndicat.id,
-        rencontreId: en_vote.rencontreId,
+        rencontreId: en_vote.texte.rencontreId,
       },
     },
   });
@@ -106,24 +106,26 @@ export default defineEventHandler(async (event) => {
     });
   }
 
-  const vote = await prisma.vote.findFirstOrThrow({
-    where: {
-      status: StatusVote.EN_VOTE,
-      rencontre: {
-        mandats: {
-          some: {
-            syndicatId: syndicat.id,
-          },
-        },
-      },
-    },
-  });
+  // const vote = await prisma.vote.findFirstOrThrow({
+  //   where: {
+  //     status: StatusVote.EN_VOTE,
+  //     texte: {
+  //       rencontre: {
+  //         mandats: {
+  //           some: {
+  //             syndicatId: syndicat.id,
+  //           },
+  //         },
+  //       },
+  //     },
+  //   },
+  // });
 
   const result = await prisma.choix.upsert({
     where: {
       syndicatId_voteId: {
         syndicatId: syndicat.id,
-        voteId: vote.id,
+        voteId: en_vote.id,
       },
     },
     update: {
@@ -133,7 +135,7 @@ export default defineEventHandler(async (event) => {
     create: {
       choix,
       syndicatId: syndicat.id,
-      voteId: vote.id,
+      voteId: en_vote.id,
     },
   });
 

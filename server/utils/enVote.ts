@@ -8,6 +8,7 @@ export async function enVote() {
     },
     include: {
       possibilites: true,
+      texte: true,
     },
     orderBy: {
       date: "desc",

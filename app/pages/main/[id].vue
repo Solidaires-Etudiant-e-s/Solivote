@@ -166,15 +166,19 @@ const launch = async (id: number) => {
 
   const previousTextes = cloneValue(textes.value ?? []);
   const previousCurrentVote = cloneValue(currentVote.value);
-  const selectedVote = (textes.value ?? []).find((texte) => texte.votes.find((vote) => vote.id === id));
+  const selectedVote = (textes.value ?? []).flatMap((texte) => texte.votes).find((vote) => vote.id === id);
   console.log(selectedVote)
   if (!selectedVote) return;
 
   isLaunchingVoteId.value = id;
-  if (votes.value) {
-    votes.value = votes.value.map((vote) => ({
-      ...vote,
-      status: vote.id === id ? StatusVote.EN_VOTE : vote.status,
+  if (textes.value) {
+    textes.value = textes.value.map((texte) => ({
+      ...texte,
+      votes: texte.votes.map((vote) => ({
+        ...vote,
+        status: vote.id === id ? StatusVote.EN_VOTE : vote.status,
+      }))
+
     }));
   }
   currentVote.value = {
@@ -575,22 +579,40 @@ const finishedPagedTextes = computed(() => {
           class="w-full mb-4"
         />
         <template v-if="finishedTextes.length">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div v-for="vote in finishedPagedTextes" :key="vote.id" class="flex flex-col gap-2">
-              <!-- <VoteCardSummary :vote="vote">
-                <template #actions v-if="user!.role === 'admin'">
-                  <div class="flex w-full items-center gap-2">
-                    <UButton :disabled="!isCurrent || currentVote !== undefined || isLaunchingVoteId !== null" icon="mingcute:refresh-2-line" variant="soft" @click.prevent="launch(vote.id)" class="w-full sm:w-1/2 justify-center">
-                      Relancer le vote
-                    </UButton>
-                    <UButton icon="mingcute:delete-line" variant="soft"
-                      class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote"
-                      @click.prevent="confirmDelete(vote.id)" >
-                      Supprimer
-                    </UButton>
-                  </div>
-                </template>
-              </VoteCardSummary> -->
+          <div class="gap-4 flex flex-col w-auto">
+            <div v-for="texte in finishedPagedTextes" :key="texte.id" class="flex flex-col gap-2">
+              <UCollapsible class="flex flex-col gap-2 w-auto">
+                  <UButton
+                    class="group"
+                    :label="texte.titre"
+                    color="neutral"
+                    variant="subtle"
+                    trailing-icon="i-lucide-chevron-down"
+                    :ui="{
+                      trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
+                    }"
+                    block
+                  />
+
+                  <template #content>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <VoteCardSummary v-for="vote in texte.votes" :vote="vote" :key="vote.id">
+                        <template #actions v-if="user!.role === 'admin'">
+                          <div class="flex w-full items-center gap-2">
+                            <UButton :disabled="!isCurrent || currentVote !== undefined || isLaunchingVoteId !== null" icon="mingcute:refresh-2-line" variant="soft" @click.prevent="launch(vote.id)" class="w-full sm:w-1/2 justify-center">
+                              Relancer le vote
+                            </UButton>
+                            <UButton icon="mingcute:delete-line" variant="soft"
+                              class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote"
+                              @click.prevent="confirmDelete(vote.id)" >
+                              Supprimer
+                            </UButton>
+                          </div>
+                        </template>
+                      </VoteCardSummary>
+                    </div>
+                  </template>
+                </UCollapsible>
             </div>
           </div>
           <div class="flex justify-center">

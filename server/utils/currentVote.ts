@@ -12,6 +12,7 @@ export async function currentVote() {
         },
       },
       possibilites: true,
+      texte: true,
     },
   });
 }
