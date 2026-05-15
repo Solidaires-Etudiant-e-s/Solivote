@@ -1,6 +1,5 @@
 <script setup lang="ts">
 import type { Ref } from "vue";
-import type { TextePayload } from "~/utils/frontendTypes";
 
 
 type Panache = Record<string, number>;
@@ -407,12 +406,15 @@ const runDelete = async () => {
   const id = voteToDelete.value;
   if (id == null || isDeletingVote.value) return;
 
-  const previousVotes = cloneValue(votes.value ?? []);
+  const previousTextes = cloneValue(textes.value ?? []);
   const previousCurrentVote = cloneValue(currentVote.value);
   isDeletingVote.value = true;
 
-  if (votes.value) {
-    votes.value = votes.value.filter((vote) => vote.id !== id);
+  if (textes.value) {
+    textes.value = textes.value.map((texte) => ({
+      ...texte,
+      votes: texte.votes.filter((vote) => vote.id !== id)
+    }));
   }
   if (currentVote.value?.id === id) {
     currentVote.value = null;
@@ -425,7 +427,7 @@ const runDelete = async () => {
       body: { id },
     });
   } catch {
-    votes.value = previousVotes;
+    textes.value = previousTextes;
     currentVote.value = previousCurrentVote;
     toast.add({
       title: "Suppression impossible",
@@ -436,6 +438,10 @@ const runDelete = async () => {
     isDeletingVote.value = false;
   }
 };
+
+const deleteTexte = async (texteId: number) => {
+  await $fetch("/api/texte", {method: 'DELETE', body: {texteId}})
+}
 
 const openVoteModal = (vote: VotePayload | null = null) => {
   voteEdited.value = vote;
@@ -526,10 +532,13 @@ const finishedPagedTextes = computed(() => {
           <div class="gap-4 flex flex-col w-auto">
             <div v-for="texte in upcomingPagedTextes" :key="texte.id">
               <UCollapsible class="flex flex-col gap-2 w-auto">
+                <div class="flex">
                 <UButton class="group" :label="texte.titre" color="neutral" variant="subtle"
                   trailing-icon="i-lucide-chevron-down" :ui="{
                     trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
                   }" block />
+                  <UButton icon="mingcute:delete-2-line" :disabled="texte.votes.length > 0" @click.stop="deleteTexte(texte.id)"/>
+                </div>
 
                 <template #content>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
@@ -638,7 +647,8 @@ const finishedPagedTextes = computed(() => {
       </template>
     </UModal>
 
-    <VoteCreateModal v-if="textesStatus === 'success' && textes" :open="showNewVote" :vote="voteEdited" :textes="textes" @update:open="updateVoteModalOpen" @saved="updateAll" />
+    <VoteCreateModal v-if="textesStatus === 'success' && textes" :open="showNewVote" :vote="voteEdited" :textes="textes"
+      @update:open="updateVoteModalOpen" @saved="updateAll" />
     <TexteCreateModal :open="showNewTexte" @update:open="updateTexteModalOpen" @saved="updateAll" />
   </div>
 </template>
