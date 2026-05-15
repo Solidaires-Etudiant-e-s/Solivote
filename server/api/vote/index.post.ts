@@ -42,9 +42,9 @@ export default defineEventHandler(async (event) => {
           data: data.possibilites.map((x) => ({ nom: x })),
         },
       },
-      rencontre: {
+      texte: {
         connect: {
-          id: current.id
+          id: data.texteId
         }
       },
     },
@@ -55,7 +55,6 @@ export default defineEventHandler(async (event) => {
         },
       },
       possibilites: true,
-      rencontre: true,
     },
   });
 

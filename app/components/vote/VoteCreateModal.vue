@@ -1,13 +1,12 @@
 <script setup lang="ts">
 import type { FormSubmitEvent } from "@nuxt/ui";
 import { z } from "zod";
-import type { Vote } from "~/utils/backendTypes";
-import { TypeVote } from "~/utils/backendTypes";
 
 const props = withDefaults(
   defineProps<{
     open: boolean;
-    vote?: Vote | null;
+    textes: Texte[];
+    vote?: Vote & {texteId: number} | null;
   }>(),
   {
     vote: null,
@@ -23,6 +22,7 @@ const schema = z
   .object({
     nom: z.string().trim().min(1),
     description: z.string(),
+    texte: z.number(),
     possibilites: z.array(z.string().trim().min(1)),
     type: z.enum(Object.values(TypeVote)),
   })
@@ -50,6 +50,7 @@ type Schema = z.output<typeof schema>;
 const formState = reactive({
   nom: "",
   description: "",
+  texte: 0,
   type: TypeVote.STANDARD as Vote["type"],
   possibilites: [] as string[],
 });
@@ -58,6 +59,7 @@ const syncForm = () => {
   formState.nom = props.vote?.nom ?? "";
   formState.description = props.vote?.description ?? "";
   formState.type = props.vote?.type ?? TypeVote.STANDARD;
+  formState.texte = props.vote?.texteId ?? props.textes[0]!.id;
   formState.possibilites = props.vote?.possibilites?.map((entry) => entry.nom) ?? [];
 };
 
@@ -97,6 +99,7 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
     nom: event.data.nom.trim(),
     description: event.data.description.trim() || null,
     type: event.data.type,
+    texteId: event.data.texte,
     possibilites:
       event.data.type === TypeVote.STANDARD
         ? []
@@ -153,6 +156,10 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             </UFormField>
             <UFormField label="Type" name="type">
               <USelect v-model="formState.type" :items="Object.values(TypeVote)" />
+            </UFormField>
+
+            <UFormField label="Texte" name="texte">
+              <USelect v-model="formState.texte" value-key="id" label-key="titre" :items="props.textes" />
             </UFormField>
 
             <UFormField v-if="formState.type === TypeVote.CONDORCET" label="Choix" name="possibilites">

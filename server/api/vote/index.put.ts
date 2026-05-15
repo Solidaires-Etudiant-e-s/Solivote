@@ -7,7 +7,8 @@ const userSchema = z
     nom: z.string().trim().min(1),
     description: z.string().nullable(),
     possibilites: z.array(z.string().trim().min(1)),
-    type: z.nativeEnum(TypeVote),
+    type: z.enum(TypeVote),
+    texteId: z.int()
   })
   .superRefine((input, ctx) => {
     if (input.type === TypeVote.STANDARD) {
@@ -16,7 +17,7 @@ const userSchema = z
 
     if (input.possibilites.length === 0) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "At least one possibility is required",
         path: ["possibilites"],
       });
@@ -24,7 +25,7 @@ const userSchema = z
 
     if (input.type === TypeVote.EN_CONTRE && input.possibilites.length !== 2) {
       ctx.addIssue({
-        code: z.ZodIssueCode.custom,
+        code: "custom",
         message: "EN_CONTRE votes require exactly two possibilities",
         path: ["possibilites"],
       });
@@ -75,6 +76,7 @@ export default defineEventHandler(async (event) => {
       nom: data.nom.trim(),
       description: data.description?.trim() || null,
       type: data.type,
+      texteId: data.texteId,
       possibilites: {
         deleteMany: {},
         ...(data.type !== TypeVote.STANDARD && data.possibilites.length > 0
@@ -93,7 +95,6 @@ export default defineEventHandler(async (event) => {
         },
       },
       possibilites: true,
-      rencontre: true,
     },
   });
 

@@ -389,6 +389,7 @@ const finishedTextes = computed(() => {
 
 const voteToDelete = ref<number | null>(null);
 const showNewVote = ref(false);
+const showNewTexte = ref(false);
 const voteEdited = ref<VotePayload | null>(null);
 const showDeleteModal = computed({
   get: () => voteToDelete.value !== null,
@@ -441,11 +442,19 @@ const openVoteModal = (vote: VotePayload | null = null) => {
   showNewVote.value = true;
 };
 
+const openTexteModal = () => {
+  showNewTexte.value = true;
+};
+
 const updateVoteModalOpen = (value: boolean) => {
   showNewVote.value = value;
   if (!value) {
     voteEdited.value = null;
   }
+};
+
+const updateTexteModalOpen = (value: boolean) => {
+  showNewTexte.value = value;
 };
 
 const pageSize = 8
@@ -503,6 +512,10 @@ const finishedPagedTextes = computed(() => {
       <div class="w-full max-w-4xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between my-4 gap-3">
           <h2 class="text-xl font-bold">Votes à venir</h2>
+          <UButton v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
+            :variant="upcomingTextes.length ? 'soft' : 'solid'" @click="openTexteModal()">
+            Nouveau Texte
+          </UButton>
           <UButton v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
             :variant="upcomingTextes.length ? 'soft' : 'solid'" @click="openVoteModal()">
             Nouveau vote
@@ -625,6 +638,7 @@ const finishedPagedTextes = computed(() => {
       </template>
     </UModal>
 
-    <VoteCreateModal :open="showNewVote" :vote="voteEdited" @update:open="updateVoteModalOpen" @saved="updateAll" />
+    <VoteCreateModal v-if="textesStatus === 'success' && textes" :open="showNewVote" :vote="voteEdited" :textes="textes" @update:open="updateVoteModalOpen" @saved="updateAll" />
+    <TexteCreateModal :open="showNewTexte" @update:open="updateTexteModalOpen" @saved="updateAll" />
   </div>
 </template>
