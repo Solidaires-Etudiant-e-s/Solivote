@@ -1,0 +1,12 @@
+-- CreateTable
+CREATE TABLE `Pdf` (
+    `id` INTEGER NOT NULL AUTO_INCREMENT,
+    `nom` VARCHAR(191) NOT NULL,
+    `titre` VARCHAR(191) NOT NULL,
+    `texteId` INTEGER NOT NULL,
+
+    PRIMARY KEY (`id`)
+) DEFAULT CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+
+-- AddForeignKey
+ALTER TABLE `Pdf` ADD CONSTRAINT `Pdf_texteId_fkey` FOREIGN KEY (`texteId`) REFERENCES `Texte`(`id`) ON DELETE CASCADE ON UPDATE CASCADE;

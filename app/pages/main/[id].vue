@@ -550,6 +550,9 @@ const finishedPagedTextes = computed(() => {
                 </div>
 
                 <template #content>
+                  <div class="flex">
+                    <UButton v-for="pdf in texte.pdfs" :key="pdf.id" icon="mingcute:document-2-line" :to="'/uploads/' + pdf.nom" external target="_blank"/>
+                  </div>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <VoteCardUpcoming v-for="vote in texte.votes" :key="vote.id" :vote="vote">
                       <template v-if="user!.role === 'admin'" #actions>
@@ -607,6 +610,9 @@ const finishedPagedTextes = computed(() => {
                   }" block />
 
                 <template #content>
+                  <div class="flex">
+                    <UButton v-for="pdf in texte.pdfs" :key="pdf.id" icon="mingcute:document-2-line" :to="'/uploads/' + pdf.nom" external target="_blank"/>
+                  </div>
                   <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <VoteCardSummary v-for="vote in texte.votes" :key="vote.id" :vote="vote">
                       <template v-if="user!.role === 'admin'" #actions>

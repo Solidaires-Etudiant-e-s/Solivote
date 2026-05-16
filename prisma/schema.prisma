@@ -75,6 +75,15 @@ model Texte {
   votes       Vote[]
   rencontre   Rencontre @relation(fields: [rencontreId], references: [id])
   rencontreId Int
+  pdfs        Pdf[]
+}
+
+model Pdf {
+  id      Int    @id @default(autoincrement())
+  nom     String
+  titre   String
+  texte   Texte  @relation(fields: [texteId], references: [id], onDelete: Cascade)
+  texteId Int
 }
 
 enum TypeChoix {

@@ -17,6 +17,15 @@ export default defineNuxtConfig({
     defaultLocale: "fr",
   },
 
+  nitro: {
+    storage: {
+      uploads: {
+        driver: "fs",
+        base: "./public/uploads",
+      },
+    },
+  },
+
   modules: [
     "@nuxt/image",
     "@nuxt/ui",
