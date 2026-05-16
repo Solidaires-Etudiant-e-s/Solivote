@@ -1,22 +1,7 @@
 import type { H3Event } from "h3";
-import { prisma } from "./prisma";
-import { currentRencontre } from "./currentRencontre";
+import type { Syndicat } from "../../app/utils/backendTypes";
 
-export async function currentSyndicat(event: H3Event): Promise<
-  | ({
-      mandats: {
-        syndicatId: number;
-        rencontreId: number;
-        mandat: number;
-      }[];
-    } & {
-      id: number;
-      nom: string;
-      defaultMandats: number;
-      actif: boolean;
-    })
-  | null
-> {
+export async function currentSyndicat(event: H3Event): Promise<Syndicat> {
   const nom = String(event.node.req.headers["ynh_user"] ?? "");
 
   const rencontre = await currentRencontre();

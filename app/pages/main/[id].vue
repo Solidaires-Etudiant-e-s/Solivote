@@ -143,7 +143,7 @@ const voteCurrentAdminRef = ref<{ refreshSyndicats: () => Promise<void> } | null
 const cloneValue = <T,>(value: T): T => structuredClone(value);
 
 const totalMandats = (value: Syndicat) =>
-  value.mandats.reduce((sum, mandat) => sum + mandat.mandat, 0);
+  value.mandats!.reduce((sum, mandat) => sum + mandat.mandat, 0);
 
 const resolveSyndicat = async (selected?: string): Promise<Syndicat | null> => {
   if (syndicat.value) {
@@ -480,7 +480,8 @@ const finishedPagedTextes = computed(() => {
 
 <template>
   <div>
-    <AppHeader :title="rencontreStatus === 'success' && rencontre
+    <AppHeader
+      :title="rencontreStatus === 'success' && rencontre
       ? getRencontreName(rencontre)
       : 'Chargement de la rencontre'
       " :user="user" :status="userStatus" :sse-status="wsStatus" />
@@ -489,17 +490,19 @@ const finishedPagedTextes = computed(() => {
       <p v-if="userStatus !== 'success'">Chargement des informations...</p>
       <template v-else-if="!isCurrent" />
       <template v-else-if="user!.role === 'syndicat'">
-        <VoteCardLive v-if="
+        <VoteCardLive
+          v-if="
           currentVoteStatus === 'success' &&
           currentVote &&
           syndicatStatus === 'success' &&
           syndicat &&
           syndicat.mandats.length > 0
-        " ref="voteCardLiveRef" :vote="currentVote" :user="user" :execute="updateAll"
+        " ref="voteCardLiveRef" :vote="currentVote" :user="user"
           :syndicats-remaining="syndicatsRemaining" @vote="(type, _selected) => voter(type as TypeChoix)"
           @panacher="(panache, _selected) => panacher(panache as Panache)" />
       </template>
-      <VoteCurrentAdmin v-else-if="user!.role === 'admin'" ref="voteCurrentAdminRef" :execute="updateAll"
+      <VoteCurrentAdmin
+        v-else-if="user!.role === 'admin'" ref="voteCurrentAdminRef"
         :current-vote="currentVote" :user="user" :current-vote-status="currentVoteStatus"
         :syndicats-remaining="syndicatsRemaining" @vote="(type, selected) => voter(type as TypeChoix, selected)"
         @panacher="
@@ -508,8 +511,9 @@ const finishedPagedTextes = computed(() => {
     </div>
 
     <div class="flex justify-center">
-      <img v-if="laposte"
-        src="https://cdn.discordapp.com/attachments/445213222426116145/1020330132508000348/drapeau.gif?ex=69e38b7c&is=69e239fc&hm=929ff142ed204a1561fa3cb481cbd003dc4695b3a260769f486f40222aa0b221&" />
+      <img
+        v-if="laposte"
+        src="https://cdn.discordapp.com/attachments/445213222426116145/1020330132508000348/drapeau.gif?ex=69e38b7c&is=69e239fc&hm=929ff142ed204a1561fa3cb481cbd003dc4695b3a260769f486f40222aa0b221&" >
     </div>
 
     <USeparator v-if="currentVote" class="w-full my-5" />
@@ -518,12 +522,16 @@ const finishedPagedTextes = computed(() => {
       <div class="w-full max-w-4xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between my-4 gap-3">
           <h2 class="text-xl font-bold">Votes à venir</h2>
-          <UButton v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
-            :variant="upcomingTextes.length ? 'soft' : 'solid'" @click="openTexteModal()">
+          <UButton
+            v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
+            :variant="upcomingTextes.length ? 'soft' : 'solid'" :disabled="!isCurrent"
+            @click="openTexteModal()">
             Nouveau Texte
           </UButton>
-          <UButton v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
-            :variant="upcomingTextes.length ? 'soft' : 'solid'" @click="openVoteModal()">
+          <UButton
+            v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
+            :variant="upcomingTextes.length ? 'soft' : 'solid'" :disabled="!isCurrent"
+            @click="openVoteModal()">
             Nouveau vote
           </UButton>
         </div>
@@ -533,11 +541,12 @@ const finishedPagedTextes = computed(() => {
             <div v-for="texte in upcomingPagedTextes" :key="texte.id">
               <UCollapsible class="flex flex-col gap-2 w-auto">
                 <div class="flex">
-                <UButton class="group" :label="texte.titre" color="neutral" variant="subtle"
+                <UButton
+                  class="group" :label="texte.titre" color="neutral" variant="subtle"
                   trailing-icon="i-lucide-chevron-down" :ui="{
                     trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
                   }" block />
-                  <UButton icon="mingcute:delete-2-line" :disabled="texte.votes.length > 0" @click.stop="deleteTexte(texte.id)"/>
+                  <UButton icon="mingcute:delete-2-line" :disabled="(textes ?? []).find((t) => t.id === texte.id)!.votes.length > 0" @click.stop="deleteTexte(texte.id)"/>
                 </div>
 
                 <template #content>
@@ -545,21 +554,24 @@ const finishedPagedTextes = computed(() => {
                     <VoteCardUpcoming v-for="vote in texte.votes" :key="vote.id" :vote="vote">
                       <template v-if="user!.role === 'admin'" #actions>
                         <div class="flex flex-col flex-wrap sm:flex-row gap-2">
-                          <UButton icon="mingcute:rocket-line" color="primary" class="w-full justify-center"
+                          <UButton
+                            icon="mingcute:rocket-line" color="primary" class="w-full justify-center"
                             :variant="currentVote ? 'soft' : 'solid'" :loading="isLaunchingVoteId === vote.id"
                             :disabled="!isCurrent || currentVote !== undefined || isLaunchingVoteId !== null
                               " @click.prevent="launch(vote.id)">
                             Lancer le vote
                           </UButton>
                           <div class="flex w-full gap-2">
-                            <UButton icon="mingcute:delete-line" color="primary" variant="soft"
+                            <UButton
+                              icon="mingcute:delete-line" color="primary" variant="soft"
                               class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote ||
                                 vote.status !== 'INITIAL' ||
                                 vote.choix.length !== 0
                                 " @click.prevent="confirmDelete(vote.id)">
                               Supprimer
                             </UButton>
-                            <UButton icon="mingcute:edit-line" color="primary" variant="soft"
+                            <UButton
+                              icon="mingcute:edit-line" color="primary" variant="soft"
                               class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote ||
                                 vote.status !== 'INITIAL' ||
                                 vote.choix.length !== 0
@@ -588,7 +600,8 @@ const finishedPagedTextes = computed(() => {
           <div class="gap-4 flex flex-col w-auto">
             <div v-for="texte in finishedPagedTextes" :key="texte.id" class="flex flex-col gap-2">
               <UCollapsible class="flex flex-col gap-2 w-auto">
-                <UButton class="group" :label="texte.titre" color="neutral" variant="subtle"
+                <UButton
+                  class="group" :label="texte.titre" color="neutral" variant="subtle"
                   trailing-icon="i-lucide-chevron-down" :ui="{
                     trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
                   }" block />
@@ -598,12 +611,14 @@ const finishedPagedTextes = computed(() => {
                     <VoteCardSummary v-for="vote in texte.votes" :key="vote.id" :vote="vote">
                       <template v-if="user!.role === 'admin'" #actions>
                         <div class="flex w-full items-center gap-2">
-                          <UButton :disabled="!isCurrent || currentVote !== undefined || isLaunchingVoteId !== null"
+                          <UButton
+                            :disabled="!isCurrent || currentVote !== undefined || isLaunchingVoteId !== null"
                             icon="mingcute:refresh-2-line" variant="soft" class="w-full sm:w-1/2 justify-center"
                             @click.prevent="launch(vote.id)">
                             Relancer le vote
                           </UButton>
-                          <UButton icon="mingcute:delete-line" variant="soft" class="w-full sm:w-1/2 justify-center"
+                          <UButton
+                            icon="mingcute:delete-line" variant="soft" class="w-full sm:w-1/2 justify-center"
                             :disabled="isDeletingVote" @click.prevent="confirmDelete(vote.id)">
                             Supprimer
                           </UButton>
@@ -637,7 +652,8 @@ const finishedPagedTextes = computed(() => {
               <UButton color="neutral" variant="ghost" class="w-full sm:w-auto" @click="cancelDelete">
                 Annuler
               </UButton>
-              <UButton color="primary" variant="soft" class="w-full sm:w-auto" :loading="isDeletingVote"
+              <UButton
+                color="primary" variant="soft" class="w-full sm:w-auto" :loading="isDeletingVote"
                 :disabled="isDeletingVote" @click="runDelete">
                 Supprimer
               </UButton>
@@ -647,7 +663,8 @@ const finishedPagedTextes = computed(() => {
       </template>
     </UModal>
 
-    <VoteCreateModal v-if="textesStatus === 'success' && textes" :open="showNewVote" :vote="voteEdited" :textes="textes"
+    <VoteCreateModal
+      v-if="textesStatus === 'success' && textes" :open="showNewVote" :vote="voteEdited" :textes="textes"
       @update:open="updateVoteModalOpen" @saved="updateAll" />
     <TexteCreateModal :open="showNewTexte" @update:open="updateTexteModalOpen" @saved="updateAll" />
   </div>

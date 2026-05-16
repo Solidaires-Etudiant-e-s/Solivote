@@ -13,9 +13,5 @@ export async function enVote() {
     orderBy: {
       date: "desc",
     },
-  }) as Promise<
-    Awaited<ReturnType<typeof prisma.vote.findFirstOrThrow>> & {
-      possibilites: { id: number }[];
-    }
-  >;
+  });
 }

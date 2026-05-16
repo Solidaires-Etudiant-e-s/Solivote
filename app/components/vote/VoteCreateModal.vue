@@ -171,7 +171,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
             </UFormField>
 
             <UFormField label="Résumé (optionel)" name="description" help="Affiché dans la liste (1–2 phrases).">
-              <UTextarea v-model="formState.description" class="w-full"
+              <UTextarea
+                v-model="formState.description" class="w-full"
                 placeholder="Ex. Vote de principe sur la proposition présentée." :rows="2" />
             </UFormField>
           </div>
@@ -181,7 +182,8 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
               <UButton color="neutral" variant="ghost" class="w-full sm:w-auto" @click="close">
                 Annuler
               </UButton>
-              <UButton type="submit" color="primary" class="w-full sm:w-auto" :loading="isSubmitting"
+              <UButton
+                type="submit" color="primary" class="w-full sm:w-auto" :loading="isSubmitting"
                 :disabled="isSubmitting">
                 {{ isEditing ? "Enregistrer" : "Créer le vote" }}
               </UButton>

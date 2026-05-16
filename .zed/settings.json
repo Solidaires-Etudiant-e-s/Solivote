@@ -11,4 +11,7 @@
     "allowed": true,
     "tabWidth": 2,
   },
+  "formatter": {
+    "code_action": "source.fixAll.eslint"
+  },
 }

@@ -32,6 +32,8 @@ export default defineNuxtConfig({
   },
 
   eslint: {
-    checker: true,
+    checker: {
+      eslintPath: 'eslint',
+    },
   },
 });

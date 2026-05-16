@@ -1,7 +1,6 @@
 <script setup lang="ts">
 const props = defineProps<{
   user?: { role: string; name?: string } | null;
-  execute: () => Promise<void> | void;
   currentVote?: Vote | null;
   currentVoteStatus?: string | null;
   syndicatsRemaining?: Syndicat[] | null;
@@ -68,11 +67,10 @@ defineExpose({
 <template>
   <div class="w-full">
     <VoteCardLive
-      ref="voteCardLiveRef"
       v-if="props.currentVoteStatus === 'success' && displayCurrentVote"
+      ref="voteCardLiveRef"
       :vote="displayCurrentVote"
       :user="props.user"
-      :execute="execute"
       :syndicats-remaining="syndicatsRemaining"
       @vote="(type, selected) => emit('vote', type, selected)"
       @panacher="(panache, selected) => emit('panacher', panache, selected)"

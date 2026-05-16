@@ -4,7 +4,7 @@ import { toRaw, type Ref } from "vue";
 const { data: rencontres, status: rencontreStatus } =
   useLazyFetch("/api/rencontre");
 const { data: user, status: userStatus } = await useLazyFetch("/api/role");
-const { data: syndicats, status: syndicatsStatus } = await useLazyFetch("/api/syndicat");
+const { data: syndicats, status: _syndicatsStatus } = await useLazyFetch("/api/syndicat");
 const { sync } = usePatchedFetchState();
 
 const syncRencontresFromServer = async () => {
@@ -250,104 +250,106 @@ const syndicat = ref<string[][]>([]);
 </script>
 
 <template>
-  <AppHeader
-    title="Rencontres"
-    :user="user"
-    :status="userStatus"
-    :sse-status="wsStatus"
-  />
+  <div>
+    <AppHeader
+      title="Rencontres"
+      :user="user"
+      :status="userStatus"
+      :sse-status="wsStatus"
+    />
 
-  <div
-    v-if="rencontreStatus === 'success' && userStatus === 'success'"
-    class="flex flex-wrap justify-center gap-2 pb-50 p-2"
-  >
-    <template v-for="(rencontre, index) in rencontres" :key="rencontre.id">
-      <RencontreCard
-        class="basis-150 shrink-0"
-        :user="user"
-        :rencontre
-        :execute="updateAll"
-        :quorum="{actuel: rencontre.mandats.length, requis: Math.floor((syndicats?.filter((s) => s.actif)?.length)! / 2)}"
-      >
-        <div v-if="user!.role === 'admin'" class="flex justify-center gap-5">
-          <UForm
-            v-if="
-              details[index] &&
-              (rencontre.status === StatusRencontre.INITIAL ||
-                rencontre.status === StatusRencontre.DEMARE)
-            "
-            :state="details[index]"
-            class="flex flex-row gap-5 justify-center"
-            @submit.prevent="onSyndicatAdd(index, rencontre.id)"
-          >
-            <UFormField
-              label="Syndicats à ajouter:"
-              name="syndicats"
-              class="basis-80"
+    <div
+      v-if="rencontreStatus === 'success' && userStatus === 'success'"
+      class="flex flex-wrap justify-center gap-2 pb-50 p-2"
+    >
+      <template v-for="(rencontre, index) in rencontres" :key="rencontre.id">
+        <RencontreCard
+          class="basis-150 shrink-0"
+          :user="user"
+          :rencontre
+          :execute="updateAll"
+          :quorum="{actuel: rencontre.mandats.length, requis: Math.floor((syndicats?.filter((s) => s.actif)?.length)! / 2)}"
+        >
+          <div v-if="user!.role === 'admin'" class="flex justify-center gap-5">
+            <UForm
+              v-if="
+                details[index] &&
+                (rencontre.status === StatusRencontre.INITIAL ||
+                  rencontre.status === StatusRencontre.DEMARE)
+              "
+              :state="details[index]"
+              class="flex flex-row gap-5 justify-center"
+              @submit.prevent="onSyndicatAdd(index, rencontre.id)"
             >
-              <UInputMenu
-                v-model="syndicat[index]"
-                multiple
-                :items="details[index]"
+              <UFormField
+                label="Syndicats à ajouter:"
+                name="syndicats"
+                class="basis-80"
+              >
+                <UInputMenu
+                  v-model="syndicat[index]"
+                  multiple
+                  :items="details[index]"
+                />
+              </UFormField>
+              <UButton
+                type="submit"
+                icon="mingcute:add-square-line"
+                color="success"
+                variant="solid"
+                :loading="isMutatingRencontre"
+                :disabled="isMutatingRencontre"
               />
-            </UFormField>
+            </UForm>
+
             <UButton
-              type="submit"
-              icon="mingcute:add-square-line"
+              v-if="rencontre.status === StatusRencontre.INITIAL"
+              icon="mingcute:rocket-line"
               color="success"
               variant="solid"
               :loading="isMutatingRencontre"
               :disabled="isMutatingRencontre"
-            />
-          </UForm>
-
-          <UButton
-            v-if="rencontre.status === StatusRencontre.INITIAL"
-            icon="mingcute:rocket-line"
-            color="success"
-            variant="solid"
-            :loading="isMutatingRencontre"
-            :disabled="isMutatingRencontre"
-            @click.prevent="launch(rencontre.id)"
-          >
-            Démarrer la rencontre
-          </UButton>
-          <UButton
-            v-if="rencontre.status === StatusRencontre.DEMARE"
-            icon="mingcute:alert-octagon-line"
-            color="error"
-            variant="solid"
-            :loading="isMutatingRencontre"
-            :disabled="isMutatingRencontre"
-            @click.prevent="stop()"
-          >
-            Clôturer la rencontre
-          </UButton>
-          <UButton
-            v-if="rencontre.status === StatusRencontre.CLOTURE"
-            icon="mingcute:refresh-2-line"
-            color="warning"
-            variant="solid"
-            :loading="isMutatingRencontre"
-            :disabled="isMutatingRencontre"
-            @click.prevent="reinit(rencontre.id)"
-          >
-            Réinitialiser la rencontre
-          </UButton>
-        </div>
-        <div v-else class="flex justify-center gap-5">
-          <UButton
-            v-if="rencontre.status !== StatusRencontre.INITIAL"
-            icon="mingcute:file-export-line"
-            color="secondary"
-            variant="solid"
-            @click.prevent="exporte(rencontre)"
-          >
-            Exporter la rencontre
-          </UButton>
-        </div>
-      </RencontreCard>
-    </template>
+              @click.prevent="launch(rencontre.id)"
+            >
+              Démarrer la rencontre
+            </UButton>
+            <UButton
+              v-if="rencontre.status === StatusRencontre.DEMARE"
+              icon="mingcute:alert-octagon-line"
+              color="error"
+              variant="solid"
+              :loading="isMutatingRencontre"
+              :disabled="isMutatingRencontre"
+              @click.prevent="stop()"
+            >
+              Clôturer la rencontre
+            </UButton>
+            <UButton
+              v-if="rencontre.status === StatusRencontre.CLOTURE"
+              icon="mingcute:refresh-2-line"
+              color="warning"
+              variant="solid"
+              :loading="isMutatingRencontre"
+              :disabled="isMutatingRencontre"
+              @click.prevent="reinit(rencontre.id)"
+            >
+              Réinitialiser la rencontre
+            </UButton>
+          </div>
+          <div v-else class="flex justify-center gap-5">
+            <UButton
+              v-if="rencontre.status !== StatusRencontre.INITIAL"
+              icon="mingcute:file-export-line"
+              color="secondary"
+              variant="solid"
+              @click.prevent="exporte(rencontre)"
+            >
+              Exporter la rencontre
+            </UButton>
+          </div>
+        </RencontreCard>
+      </template>
+    </div>
   </div>
 </template>
 
