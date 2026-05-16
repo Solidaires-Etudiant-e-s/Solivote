@@ -1,9 +1,7 @@
 <script setup lang="ts">
 
 const { data: user, status: userStatus } = await useLazyFetch("/api/role");
-const { data: rawSyndicats, status: syndicatsStatus, execute } = await useLazyFetch("/api/syndicat");
-
-const syndicats = ref(rawSyndicats.value);
+const { data: syndicats, status: syndicatsStatus, execute } = await useLazyFetch("/api/syndicat");
 
 const refresh = async () => {
   await $fetch('/api/syndicat/populate', {method: 'POST'})
