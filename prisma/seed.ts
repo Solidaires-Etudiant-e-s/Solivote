@@ -24,6 +24,7 @@ async function main() {
   await prisma.choix.deleteMany();
   await prisma.vote.deleteMany();
   await prisma.mandat.deleteMany();
+  await prisma.texte.deleteMany();
   await prisma.rencontre.deleteMany();
   await prisma.syndicat.deleteMany();
 
@@ -103,6 +104,34 @@ async function main() {
   );
   await prisma.mandat.createMany({ data: mandatsData });
 
+  const texteTitle = [
+    "Budget",
+    "Fédéralisation",
+    "SF",
+    "Mandatement",
+  ];
+
+  let textes = []
+  rencontres.forEach(async (rencontre, rindex) => {
+    for (let tindex = 0; tindex < 3; tindex++) {
+      const texte = {
+        titre: texteTitle[(tindex + rindex) % texteTitle.length],
+        rencontreId: rencontre.id
+      }
+      textes.push(texte)
+    }
+  })
+
+  await prisma.texte.createMany({
+    data: textes
+  })
+
+  textes = await prisma.texte.findMany({
+    include: {
+      rencontre: true
+    }
+  })
+
   const voteTopics = [
     "Adoption du budget",
     "Evolution des primes",
@@ -124,14 +153,14 @@ async function main() {
   ];
 
   const votes = [];
-  for (let rIndex = 0; rIndex < rencontres.length; rIndex += 1) {
-    const rencontre = rencontres[rIndex];
-    const isClosed = rencontre.status === StatusRencontre.CLOTURE;
-    const isCurrent = rencontre.status === StatusRencontre.DEMARE;
+  for (let tIndex = 0; tIndex < textes.length; tIndex += 1) {
+    const texte = textes[tIndex];
+    const isClosed = texte.rencontre.status === StatusRencontre.CLOTURE;
+    const isCurrent = texte.rencontre.status === StatusRencontre.DEMARE;
     const votesPerRencontre = isCurrent ? 5 : 3;
 
     for (let vIndex = 0; vIndex < votesPerRencontre; vIndex += 1) {
-      const topic = voteTopics[(rIndex + vIndex) % voteTopics.length];
+      const topic = voteTopics[(tIndex + vIndex) % voteTopics.length];
       const status = isClosed
         ? StatusVote.CLOTURE
         : isCurrent
@@ -144,13 +173,16 @@ async function main() {
 
       const vote = await prisma.vote.create({
         data: {
-          nom: `${topic} ${rencontre.dateDebut.getFullYear()}`,
+          nom: `${topic} ${texte.rencontre.dateDebut.getFullYear()}`,
           type: TypeVote.STANDARD,
           description:
-            voteDescriptions[(rIndex + vIndex) % voteDescriptions.length],
-          rencontreId: rencontre.id,
+            voteDescriptions[(tIndex + vIndex) % voteDescriptions.length],
           status,
+          texteId: texte.id
         },
+        include: {
+          texte: true
+        }
       });
       votes.push(vote);
     }
@@ -172,11 +204,11 @@ async function main() {
       const syndicat = allSyndicats[sIndex];
       let type;
 
-      const mandat = await prisma.mandat.findUnique({
+      const mandat = await prisma.mandat.findUniqueOrThrow({
         where: {
           syndicatId_rencontreId: {
             syndicatId: syndicat.id,
-            rencontreId: vote.rencontreId,
+            rencontreId: vote.texte.rencontreId,
           }
         }
       })
@@ -200,7 +232,7 @@ async function main() {
   await prisma.choix.createMany({ data: choixData });
 
   console.log(
-    `Seeded ${syndicats.count} syndicats, ${rencontres.length} rencontres, ${votes.length} votes, and ${choixData.length} choix.`,
+    `Seeded ${syndicats.count} syndicats, ${rencontres.length} rencontres, ${textes.length} textes, ${votes.length} votes, and ${choixData.length} choix.`,
   );
 }
 

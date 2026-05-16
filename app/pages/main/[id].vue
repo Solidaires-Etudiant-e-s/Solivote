@@ -16,9 +16,9 @@ if (useRoute().params.id !== "current" && Number.isNaN(rencontreId.value)) {
   })
 }
 
-const { data: votes, status: voteStatus } = await useLazyFetch(
+const { data: textes, status: textesStatus } = await useLazyFetch(
   "/api/votes",
-  { query: { id: rencontreId }},
+  { query: { id: rencontreId } },
 );
 const { data: user, status: userStatus } = await useLazyFetch("/api/role");
 const { data: currentVote, status: currentVoteStatus } =
@@ -26,7 +26,7 @@ const { data: currentVote, status: currentVoteStatus } =
     key: "vote-current",
   });
 const { data: rencontre, status: rencontreStatus } =
-  await useLazyFetch("/api/rencontre/current", { query: { id: rencontreId }});
+  await useLazyFetch("/api/rencontre/current", { query: { id: rencontreId } });
 const { data: syndicat, status: syndicatStatus, execute: syndicatExecute } = await useLazyFetch(
   "/api/syndicat/current",
 );
@@ -55,8 +55,8 @@ watchEffect(() => {
 
 const syncVotesFromServer = async () => {
   await sync(
-    votes,
-    () => $fetch("/api/votes", { query: { id: rencontreId.value }}),
+    textes,
+    () => $fetch("/api/votes", { query: { id: rencontreId.value } }),
     "byId",
   );
 };
@@ -141,44 +141,11 @@ const voteCardLiveRef = ref<{ refreshSyndicats: () => Promise<void> } | null>(nu
 const voteCurrentAdminRef = ref<{ refreshSyndicats: () => Promise<void> } | null>(null);
 
 const cloneValue = <T,>(value: T): T => structuredClone(value);
-const normalizeSyndicat = (value: unknown): Syndicat | null => {
-  if (!value || typeof value !== "object") return null;
-  const raw = value as Record<string, unknown>;
-  const id = Number(raw.id);
-  const nom = typeof raw.nom === "string" ? raw.nom : "";
-  if (!Number.isInteger(id) || !nom) return null;
-
-  if (rencontreId.value == null) {
-    rencontreId.value =
-      currentVote.value?.rencontreId ?? rencontre.value!.id;
-  }
-  if (rencontreId.value == null) return null;
-  const mandats: Array<{ mandat: number; rencontreId?: number }> = [];
-  for (const entry of Array.isArray(raw.mandats) ? raw.mandats : []) {
-    if (!entry || typeof entry !== "object") continue;
-    const data = entry as Record<string, unknown>;
-    const mandat = Number(data.mandat);
-    if (!Number.isFinite(mandat) || mandat <= 0) continue;
-    const rencontreId = Number(data.rencontreId);
-
-    mandats.push({
-      mandat: Math.trunc(mandat),
-      ...(Number.isInteger(rencontreId) ? { rencontreId } : {}),
-    });
-  }
-
-  const scopedMandats = mandats.filter(
-    (mandat) => mandat.rencontreId === rencontreId.value,
-  );
-  if (!scopedMandats.length) return null;
-
-  return { id, nom, mandats: scopedMandats };
-};
 
 const totalMandats = (value: Syndicat) =>
   value.mandats.reduce((sum, mandat) => sum + mandat.mandat, 0);
 
-const resolveSyndicat = async (selected?: string): Promise<Syndicat | nul> => {
+const resolveSyndicat = async (selected?: string): Promise<Syndicat | null> => {
   if (syndicat.value) {
     return syndicat.value;
   }
@@ -196,16 +163,21 @@ const resolveSyndicat = async (selected?: string): Promise<Syndicat | nul> => {
 const launch = async (id: number) => {
   if (isLaunchingVoteId.value !== null) return;
 
-  const previousVotes = cloneValue(votes.value ?? []);
+  const previousTextes = cloneValue(textes.value ?? []);
   const previousCurrentVote = cloneValue(currentVote.value);
-  const selectedVote = (votes.value ?? []).find((vote) => vote.id === id);
+  const selectedVote = (textes.value ?? []).flatMap((texte) => texte.votes).find((vote) => vote.id === id);
+  console.log(selectedVote)
   if (!selectedVote) return;
 
   isLaunchingVoteId.value = id;
-  if (votes.value) {
-    votes.value = votes.value.map((vote) => ({
-      ...vote,
-      status: vote.id === id ? StatusVote.EN_VOTE : vote.status,
+  if (textes.value) {
+    textes.value = textes.value.map((texte) => ({
+      ...texte,
+      votes: texte.votes.map((vote) => ({
+        ...vote,
+        status: vote.id === id ? StatusVote.EN_VOTE : vote.status,
+      }))
+
     }));
   }
   currentVote.value = {
@@ -219,7 +191,7 @@ const launch = async (id: number) => {
     await $fetch(`/api/vote/start/${id}`, { method: "POST" });
     await syncVotesFromServer();
   } catch {
-    votes.value = previousVotes;
+    textes.value = previousTextes;
     currentVote.value = previousCurrentVote;
     toast.add({
       title: "Vote déjà en cours",
@@ -291,11 +263,7 @@ const panacher = async (
 ) => {
   const body = {
     choix: [] as Array<{ type: string | number; mandat: number }>,
-    syndicat: null as {
-      id: number;
-      nom: string;
-      mandats: Array<{ mandat: number; rencontreId?: number }>;
-    } | null,
+    syndicat: null as Syndicat | null,
   };
 
   for (const type in panache) {
@@ -371,7 +339,7 @@ const fuzzyMatch = (query: string, target: string): boolean => {
   return matches / qt.length >= 0.4;
 };
 
-const fuzzyFilterVotes = (list: VotePayload[], query: string) => {
+const fuzzyFilterTextes = (list: TextePayload[], query: string) => {
   const q = query.trim();
   if (!q) return list;
 
@@ -385,29 +353,42 @@ const fuzzyFilterVotes = (list: VotePayload[], query: string) => {
     laposte.value = null
   }
 
-  return list.filter(
-    (vote) =>
-      fuzzyMatch(q, vote.nom) ||
-      (vote.description != null && fuzzyMatch(q, vote.description)),
-  );
+  return list.map((texte) => {
+    if (fuzzyMatch(q, texte.titre)) return texte;
+
+    const votes = texte.votes.filter(
+      (vote) => fuzzyMatch(q, vote.nom) ||
+        (vote.description != null && fuzzyMatch(q, vote.description)),
+    )
+
+    if (votes.length === 0) return null;
+
+    return {
+      ...texte,
+      votes: votes,
+    }
+  }).filter((texte) => texte !== null)
 };
 
-const upcomingVotes = computed(() =>
-  fuzzyFilterVotes(
-    (votes.value ?? []).filter((vote) => vote.status === "INITIAL"),
+const upcomingTextes = computed(() => {
+  return fuzzyFilterTextes(
+    (textes.value ?? []).map((texte) => ({ ...texte, votes: texte?.votes.filter((vote) => vote.status === "INITIAL") })),
     upcomingSearch.value,
-  ),
+  )
+}
 );
 
-const finishedVotes = computed(() =>
-  fuzzyFilterVotes(
-    (votes.value ?? []).filter((vote) => vote.status === "CLOTURE"),
+const finishedTextes = computed(() => {
+  return fuzzyFilterTextes(
+    (textes.value ?? []).map((texte) => ({ ...texte, votes: texte?.votes.filter((vote) => vote.status === "CLOTURE") })),
     finishedSearch.value,
-  ),
+  )
+}
 );
 
 const voteToDelete = ref<number | null>(null);
 const showNewVote = ref(false);
+const showNewTexte = ref(false);
 const voteEdited = ref<VotePayload | null>(null);
 const showDeleteModal = computed({
   get: () => voteToDelete.value !== null,
@@ -425,12 +406,15 @@ const runDelete = async () => {
   const id = voteToDelete.value;
   if (id == null || isDeletingVote.value) return;
 
-  const previousVotes = cloneValue(votes.value ?? []);
+  const previousTextes = cloneValue(textes.value ?? []);
   const previousCurrentVote = cloneValue(currentVote.value);
   isDeletingVote.value = true;
 
-  if (votes.value) {
-    votes.value = votes.value.filter((vote) => vote.id !== id);
+  if (textes.value) {
+    textes.value = textes.value.map((texte) => ({
+      ...texte,
+      votes: texte.votes.filter((vote) => vote.id !== id)
+    }));
   }
   if (currentVote.value?.id === id) {
     currentVote.value = null;
@@ -443,7 +427,7 @@ const runDelete = async () => {
       body: { id },
     });
   } catch {
-    votes.value = previousVotes;
+    textes.value = previousTextes;
     currentVote.value = previousCurrentVote;
     toast.add({
       title: "Suppression impossible",
@@ -455,9 +439,17 @@ const runDelete = async () => {
   }
 };
 
+const deleteTexte = async (texteId: number) => {
+  await $fetch("/api/texte", {method: 'DELETE', body: {texteId}})
+}
+
 const openVoteModal = (vote: VotePayload | null = null) => {
   voteEdited.value = vote;
   showNewVote.value = true;
+};
+
+const openTexteModal = () => {
+  showNewTexte.value = true;
 };
 
 const updateVoteModalOpen = (value: boolean) => {
@@ -467,137 +459,164 @@ const updateVoteModalOpen = (value: boolean) => {
   }
 };
 
+const updateTexteModalOpen = (value: boolean) => {
+  showNewTexte.value = value;
+};
+
 const pageSize = 8
 
-const upcomingPagedVotes = computed(() => {
+const upcomingPagedTextes = computed(() => {
   const start = (upcomingVotesPage.value - 1) * pageSize
-  const end   = start + pageSize
-  return upcomingVotes.value.slice(start, end)
+  const end = start + pageSize
+  return upcomingTextes.value.slice(start, end)
 })
 
-const finishedPagedVotes = computed(() => {
+const finishedPagedTextes = computed(() => {
   const start = (finishedVotesPage.value - 1) * pageSize
-  const end   = start + pageSize
-  return finishedVotes.value.slice(start, end)
+  const end = start + pageSize
+  return finishedTextes.value.slice(start, end)
 })
 </script>
 
 <template>
   <div>
     <AppHeader :title="rencontreStatus === 'success' && rencontre
-        ? getRencontreName(rencontre)
-        : 'Chargement de la rencontre'
+      ? getRencontreName(rencontre)
+      : 'Chargement de la rencontre'
       " :user="user" :status="userStatus" :sse-status="wsStatus" />
 
     <div class="w-full max-w-4xl mx-auto px-3 sm:px-4">
       <p v-if="userStatus !== 'success'">Chargement des informations...</p>
-      <template v-else-if="!isCurrent"/>
+      <template v-else-if="!isCurrent" />
       <template v-else-if="user!.role === 'syndicat'">
-        <VoteCardLive ref="voteCardLiveRef" v-if="
+        <VoteCardLive v-if="
           currentVoteStatus === 'success' &&
           currentVote &&
           syndicatStatus === 'success' &&
           syndicat &&
           syndicat.mandats.length > 0
-        " :vote="currentVote" :user="user" :execute="updateAll" :syndicats-remaining="syndicatsRemaining"
-          @vote="(type, _selected) => voter(type as TypeChoix)"
+        " ref="voteCardLiveRef" :vote="currentVote" :user="user" :execute="updateAll"
+          :syndicats-remaining="syndicatsRemaining" @vote="(type, _selected) => voter(type as TypeChoix)"
           @panacher="(panache, _selected) => panacher(panache as Panache)" />
       </template>
-      <VoteCurrentAdmin ref="voteCurrentAdminRef" v-else-if="user!.role === 'admin'" :execute="updateAll" :current-vote="currentVote" :user="user"
-        :current-vote-status="currentVoteStatus" :syndicats-remaining="syndicatsRemaining"
-        @vote="(type, selected) => voter(type as TypeChoix, selected)" @panacher="
+      <VoteCurrentAdmin v-else-if="user!.role === 'admin'" ref="voteCurrentAdminRef" :execute="updateAll"
+        :current-vote="currentVote" :user="user" :current-vote-status="currentVoteStatus"
+        :syndicats-remaining="syndicatsRemaining" @vote="(type, selected) => voter(type as TypeChoix, selected)"
+        @panacher="
           (panache, selected) => panacher(panache as Panache, selected)
         " />
     </div>
 
     <div class="flex justify-center">
-      <img v-if="laposte" src="https://cdn.discordapp.com/attachments/445213222426116145/1020330132508000348/drapeau.gif?ex=69e38b7c&is=69e239fc&hm=929ff142ed204a1561fa3cb481cbd003dc4695b3a260769f486f40222aa0b221&"/>
+      <img v-if="laposte"
+        src="https://cdn.discordapp.com/attachments/445213222426116145/1020330132508000348/drapeau.gif?ex=69e38b7c&is=69e239fc&hm=929ff142ed204a1561fa3cb481cbd003dc4695b3a260769f486f40222aa0b221&" />
     </div>
 
-    <USeparator class="w-full my-5" v-if="currentVote" />
+    <USeparator v-if="currentVote" class="w-full my-5" />
 
-    <div v-if="voteStatus === 'success' && userStatus === 'success'" class="w-full px-2 sm:px-4 pb-24 sm:pb-50">
+    <div v-if="textesStatus === 'success' && userStatus === 'success'" class="w-full px-2 sm:px-4 pb-24 sm:pb-50">
       <div class="w-full max-w-4xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between my-4 gap-3">
           <h2 class="text-xl font-bold">Votes à venir</h2>
           <UButton v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
-            :variant="upcomingVotes.length ? 'soft' : 'solid'" @click="openVoteModal()">
+            :variant="upcomingTextes.length ? 'soft' : 'solid'" @click="openTexteModal()">
+            Nouveau Texte
+          </UButton>
+          <UButton v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
+            :variant="upcomingTextes.length ? 'soft' : 'solid'" @click="openVoteModal()">
             Nouveau vote
           </UButton>
         </div>
-        <UInput
-          v-model="upcomingSearch"
-          icon="mingcute:search-line"
-          placeholder="Rechercher..."
-          class="w-full mb-4"
-        />
-        <template v-if="upcomingVotes.length">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div v-for="vote in upcomingPagedVotes" :key="vote.id">
-              <VoteCardUpcoming :vote="vote">
-                <template #actions v-if="user!.role === 'admin'">
-                  <div class="flex flex-col flex-wrap sm:flex-row gap-2">
-                    <UButton icon="mingcute:rocket-line" color="primary" class="w-full justify-center"
-                      :variant="currentVote ? 'soft' : 'solid'" :loading="isLaunchingVoteId === vote.id" :disabled="!isCurrent || currentVote !== undefined || isLaunchingVoteId !== null
-                        " @click.prevent="launch(vote.id)">
-                      Lancer le vote
-                    </UButton>
-                    <div class="flex w-full gap-2">
-                    <UButton icon="mingcute:delete-line" color="primary" variant="soft"
-                      class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote ||
-                        vote.status !== 'INITIAL' ||
-                        vote.choix.length !== 0
-                        " @click.prevent="confirmDelete(vote.id)">
-                      Supprimer
-                    </UButton>
-                    <UButton icon="mingcute:edit-line" color="primary" variant="soft"
-                      class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote ||
-                        vote.status !== 'INITIAL' ||
-                        vote.choix.length !== 0
-                        " @click.prevent="openVoteModal(vote)">
-                      Éditer
-                    </UButton>
-                    </div>
+        <UInput v-model="upcomingSearch" icon="mingcute:search-line" placeholder="Rechercher..." class="w-full mb-4" />
+        <template v-if="upcomingTextes.length">
+          <div class="gap-4 flex flex-col w-auto">
+            <div v-for="texte in upcomingPagedTextes" :key="texte.id">
+              <UCollapsible class="flex flex-col gap-2 w-auto">
+                <div class="flex">
+                <UButton class="group" :label="texte.titre" color="neutral" variant="subtle"
+                  trailing-icon="i-lucide-chevron-down" :ui="{
+                    trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
+                  }" block />
+                  <UButton icon="mingcute:delete-2-line" :disabled="texte.votes.length > 0" @click.stop="deleteTexte(texte.id)"/>
+                </div>
+
+                <template #content>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <VoteCardUpcoming v-for="vote in texte.votes" :key="vote.id" :vote="vote">
+                      <template v-if="user!.role === 'admin'" #actions>
+                        <div class="flex flex-col flex-wrap sm:flex-row gap-2">
+                          <UButton icon="mingcute:rocket-line" color="primary" class="w-full justify-center"
+                            :variant="currentVote ? 'soft' : 'solid'" :loading="isLaunchingVoteId === vote.id"
+                            :disabled="!isCurrent || currentVote !== undefined || isLaunchingVoteId !== null
+                              " @click.prevent="launch(vote.id)">
+                            Lancer le vote
+                          </UButton>
+                          <div class="flex w-full gap-2">
+                            <UButton icon="mingcute:delete-line" color="primary" variant="soft"
+                              class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote ||
+                                vote.status !== 'INITIAL' ||
+                                vote.choix.length !== 0
+                                " @click.prevent="confirmDelete(vote.id)">
+                              Supprimer
+                            </UButton>
+                            <UButton icon="mingcute:edit-line" color="primary" variant="soft"
+                              class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote ||
+                                vote.status !== 'INITIAL' ||
+                                vote.choix.length !== 0
+                                " @click.prevent="openVoteModal(vote)">
+                              Éditer
+                            </UButton>
+                          </div>
+                        </div>
+                      </template>
+                    </VoteCardUpcoming>
                   </div>
                 </template>
-              </VoteCardUpcoming>
+              </UCollapsible>
             </div>
           </div>
           <div class="flex justify-center">
-            <UPagination v-model:page="upcomingVotesPage" :total="upcomingVotes.length" :items-per-page="pageSize"/>
+            <UPagination v-model:page="upcomingVotesPage" :total="upcomingTextes.length" :items-per-page="pageSize" />
           </div>
         </template>
-        <p v-else class="text-sm text-muted">{{ upcomingSearch.trim() ? "Aucun résultat." : "Aucun vote planifié." }}</p>
+        <p v-else class="text-sm text-muted">{{ upcomingSearch.trim() ? "Aucun résultat." : "Aucun vote planifié." }}
+        </p>
 
         <h2 class="text-xl mb-3 mt-12 font-bold">Votes terminés</h2>
-        <UInput
-          v-model="finishedSearch"
-          icon="mingcute:search-line"
-          placeholder="Rechercher..."
-          class="w-full mb-4"
-        />
-        <template v-if="finishedVotes.length">
-          <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div v-for="vote in finishedPagedVotes" :key="vote.id" class="flex flex-col gap-2">
-              <VoteCardSummary :vote="vote">
-                <template #actions v-if="user!.role === 'admin'">
-                  <div class="flex w-full items-center gap-2">
-                    <UButton :disabled="!isCurrent || currentVote !== undefined || isLaunchingVoteId !== null
-                      " icon="mingcute:refresh-2-line" variant="soft" @click.prevent="launch(vote.id)" class="w-full sm:w-1/2 justify-center">
-                      Relancer le vote
-                    </UButton>
-                    <UButton icon="mingcute:delete-line" variant="soft"
-                      class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote"
-                      @click.prevent="confirmDelete(vote.id)" >
-                      Supprimer
-                    </UButton>
+        <UInput v-model="finishedSearch" icon="mingcute:search-line" placeholder="Rechercher..." class="w-full mb-4" />
+        <template v-if="finishedTextes.length">
+          <div class="gap-4 flex flex-col w-auto">
+            <div v-for="texte in finishedPagedTextes" :key="texte.id" class="flex flex-col gap-2">
+              <UCollapsible class="flex flex-col gap-2 w-auto">
+                <UButton class="group" :label="texte.titre" color="neutral" variant="subtle"
+                  trailing-icon="i-lucide-chevron-down" :ui="{
+                    trailingIcon: 'group-data-[state=open]:rotate-180 transition-transform duration-200'
+                  }" block />
+
+                <template #content>
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <VoteCardSummary v-for="vote in texte.votes" :key="vote.id" :vote="vote">
+                      <template v-if="user!.role === 'admin'" #actions>
+                        <div class="flex w-full items-center gap-2">
+                          <UButton :disabled="!isCurrent || currentVote !== undefined || isLaunchingVoteId !== null"
+                            icon="mingcute:refresh-2-line" variant="soft" class="w-full sm:w-1/2 justify-center"
+                            @click.prevent="launch(vote.id)">
+                            Relancer le vote
+                          </UButton>
+                          <UButton icon="mingcute:delete-line" variant="soft" class="w-full sm:w-1/2 justify-center"
+                            :disabled="isDeletingVote" @click.prevent="confirmDelete(vote.id)">
+                            Supprimer
+                          </UButton>
+                        </div>
+                      </template>
+                    </VoteCardSummary>
                   </div>
                 </template>
-              </VoteCardSummary>
+              </UCollapsible>
             </div>
           </div>
           <div class="flex justify-center">
-            <UPagination v-model:page="finishedVotesPage" :total="finishedVotes.length" :items-per-page="pageSize"/>
+            <UPagination v-model:page="finishedVotesPage" :total="finishedTextes.length" :items-per-page="pageSize" />
           </div>
         </template>
         <p v-else class="text-sm text-muted">{{ finishedSearch.trim() ? "Aucun résultat." : "Aucun vote terminé." }}</p>
@@ -628,7 +647,8 @@ const finishedPagedVotes = computed(() => {
       </template>
     </UModal>
 
-    <VoteCreateModal :open="showNewVote" :vote="voteEdited" @update:open="updateVoteModalOpen"
-      @saved="updateAll" />
+    <VoteCreateModal v-if="textesStatus === 'success' && textes" :open="showNewVote" :vote="voteEdited" :textes="textes"
+      @update:open="updateVoteModalOpen" @saved="updateAll" />
+    <TexteCreateModal :open="showNewTexte" @update:open="updateTexteModalOpen" @saved="updateAll" />
   </div>
 </template>

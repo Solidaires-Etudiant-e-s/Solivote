@@ -7,6 +7,7 @@ const userSchema = z
     description: z.string().nullable(),
     possibilites: z.array(z.string().min(1)),
     type: z.enum(TypeVote),
+    texteId: z.int()
   })
   .refine((input) => {
     if (input.type != TypeVote.CONDORCET) return true;
@@ -41,9 +42,9 @@ export default defineEventHandler(async (event) => {
           data: data.possibilites.map((x) => ({ nom: x })),
         },
       },
-      rencontre: {
+      texte: {
         connect: {
-          id: current.id
+          id: data.texteId
         }
       },
     },
@@ -54,7 +55,6 @@ export default defineEventHandler(async (event) => {
         },
       },
       possibilites: true,
-      rencontre: true,
     },
   });
 

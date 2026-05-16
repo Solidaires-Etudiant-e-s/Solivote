@@ -4,7 +4,7 @@ import { TypeVote } from "~/utils/backendTypes";
 
 const props = withDefaults(
   defineProps<{
-    vote: Vote;
+    vote: Vote & {texte: Texte};
     user?: { role: string; name?: string } | null;
     execute: () => Promise<void> | void;
     syndicatsRemaining?: Syndicat[] | null;
@@ -104,7 +104,7 @@ const availableMandats = computed(() => {
   const found = list.find((item) => item.nom.toLowerCase() === name);
   if (!found) return 0;
   const forCurrentRencontre = found.mandats.filter(
-    (m) => m.rencontreId === props.vote.rencontreId,
+    (m) => m.rencontreId === props.vote.texte.rencontreId,
   );
   return forCurrentRencontre.reduce((sum, m) => sum + (m.mandat ?? 0), 0);
 });
