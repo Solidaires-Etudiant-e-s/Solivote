@@ -96,4 +96,13 @@ export type Texte = {
   votes: Vote[];
   rencontre?: Rencontre;
   rencontreId: number;
+  pdfs: Pdf[];
+};
+
+export type Pdf = {
+  id: number;
+  nom: string;
+  titre: string;
+  texte?: Texte;
+  texteId: number;
 };

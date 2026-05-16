@@ -13,23 +13,15 @@ const emit = defineEmits<{
 
 const schema = z
   .object({
-    titre: z.string().min(1)
-  });
+    titre: z.string().min(1),
+    pdf: z.array(z.instanceof(File)),
+  }).refine((files) => files.pdf.every((file) => file.type === "application/pdf"));
 
 type Schema = z.output<typeof schema>;
 const formState = reactive({
   titre: "",
+  pdf: [] as File[],
 });
-
-// watch(
-//   [() => props.open],
-//   ([isOpen]) => {
-//     if (isOpen) {
-//       syncForm();
-//     }
-//   },
-//   { immediate: true },
-// );
 
 const toast = useToast();
 const isSubmitting = ref(false);
@@ -41,15 +33,19 @@ const close = () => {
 async function onSubmit(event: FormSubmitEvent<Schema>) {
   if (isSubmitting.value) return;
 
-  const payload = {
-    titre: event.data.titre.trim()
-  };
+  const formData = new FormData();
+  formData.append('titre', event.data.titre.trim());
+
+  event.data.pdf.forEach((file) => {
+    formData.append('pdf', file);
+  });
+
   isSubmitting.value = true;
 
   try {
     const result = await $fetch("/api/texte", {
       method: "POST",
-      body: payload,
+      body: formData,
     });
     toast.add({
       title: "Texte créé",
@@ -87,6 +83,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
           <div class="grid gap-4">
             <UFormField label="Titre du Texte" name="titre">
               <UInput v-model="formState.titre" placeholder="Texte budget 2026"/>
+            </UFormField>
+            <UFormField label="Document" name="pdf">
+              <UFileUpload v-model="formState.pdf" multiple accept="application/pdf"/>
             </UFormField>
           </div>
 

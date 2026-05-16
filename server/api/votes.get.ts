@@ -16,7 +16,8 @@ export default defineEventHandler(async (event) => {
             possibilites: true,
             texte: true,
           }
-        }
+        },
+        pdfs: true,
       }
     })
   }
@@ -37,7 +38,8 @@ export default defineEventHandler(async (event) => {
             },
             possibilites: true
           }
-        }
+        },
+        pdfs: true,
       }
     })
   }

@@ -8,13 +8,17 @@ const userSchema = z
 export default defineEventHandler(async (event) => {
   const data = await readValidatedBody(event, (body) => userSchema.parse(body));
 
-  console.log(data.texteId)
-
-  await prisma.texte.delete({
+  const texte = await prisma.texte.delete({
     where: {
       id: data.texteId,
+    },
+    include: {
+      pdfs: true,
     }
   });
+
+  const storage = useStorage("uploads");
+  texte.pdfs.forEach((pdf) => storage.remove(pdf.nom))
 
   await broadcastVote("vote");
 });
