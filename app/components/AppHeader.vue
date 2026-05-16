@@ -31,7 +31,7 @@ const display = computed(() => {
         :name="display"
         class="hidden sm:flex"
       />
-      <UIcon v-else name="mingcute:loading-fill" class="animate-spin"></UIcon>
+      <UIcon v-else name="mingcute:loading-fill" class="animate-spin"/>
       <UColorModeSelect />
     </template>
   </UHeader>

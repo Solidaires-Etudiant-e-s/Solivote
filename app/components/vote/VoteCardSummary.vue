@@ -1,20 +1,29 @@
 <script setup lang="ts">
-import type { TypeChoix, TypeVote } from "~/utils/backendTypes";
+import { TypeVote, type TypeChoix } from "~/utils/backendTypes";
 
 const props = defineProps<{
   vote: Vote;
 }>();
 
-const choiceMeta: Array<{ key: TypeChoix; label: string }> = [
-  { key: "POUR", label: "Pour" },
-  { key: "CONTRE", label: "Contre" },
-  { key: "ABSTENTION", label: "Abstention" },
-  { key: "NPPV", label: "NPPV" },
-];
+const choiceMeta: { key: TypeChoix | number; label: string }[] =
+  (() => {
+    if (props.vote.type == TypeVote.STANDARD) {
+      return [
+        { key: "POUR", label: "Pour" },
+        { key: "CONTRE", label: "Contre" },
+        { key: "ABSTENTION", label: "Abstention" },
+        { key: "NPPV", label: "NPPV" },
+      ]
+    }
+    return [
+      { key: "ABSTENTION", label: "Abstention" },
+      { key: "NPPV", label: "NPPV" }
+    ].concat(props.vote.possibilites!.map((v => ({key: v.id, label: v.nom}))))
+  })();
 
 const sortedChoiceMeta = computed(() =>
   [...choiceMeta].sort((left, right) => {
-    const totalDiff = choiceTotals.value[right.key] - choiceTotals.value[left.key];
+    const totalDiff = (choiceTotals.value.get(right.key) ?? 0) - (choiceTotals.value.get(left.key) ?? 0);
     if (totalDiff !== 0) {
       return totalDiff;
     }
@@ -24,29 +33,25 @@ const sortedChoiceMeta = computed(() =>
   }),
 );
 
-const choiceTotals = computed<Record<TypeChoix, number>>(() => {
-  const base: Record<TypeChoix, number> = {
-    POUR: 0,
-    CONTRE: 0,
-    ABSTENTION: 0,
-    NPPV: 0,
-  };
+const choiceTotals = computed<Map<TypeChoix | number, number>>(() => {
+  const base: Map<TypeChoix | number, number> = new Map();
 
   for (const choix of props.vote.choix || []) {
     for (const entry of choix.choix) {
-      const type = String(entry.type);
+      const t = entry.type;
       const mandat = Number(entry.mandat ?? 0);
-      if (type in base && Number.isFinite(mandat) && mandat > 0) {
-        base[type as TypeChoix] += mandat;
+      if (!(Number.isFinite(mandat) && mandat > 0)) {
+        continue
       }
+      base.set(t, mandat + (base.get(t) ?? 0))
     }
   }
-
   return base;
 });
 
-const totalVotes = computed(() =>
-  Object.values(choiceTotals.value).reduce((sum, count) => sum + count, 0),
+const totalVotes = computed(() => {
+  return [...choiceTotals.value.values()].reduce((sum, count) => sum + count, 0)
+}
 );
 
 const choiceGroups = computed(() => {
@@ -143,7 +148,7 @@ const choiceGroups = computed(() => {
       </div>
     </div>
 
-    <template #footer v-if="$slots.actions" class="mt-4">
+    <template v-if="$slots.actions" #footer>
       <slot name="actions" />
     </template>
   </UCard>

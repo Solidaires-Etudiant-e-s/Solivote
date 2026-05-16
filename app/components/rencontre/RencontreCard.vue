@@ -3,7 +3,7 @@ import type { TableColumn } from "@nuxt/ui";
 
 const props = withDefaults(
   defineProps<{
-    rencontre: Rencontre;
+    rencontre: Rencontre & {mandats: Mandat[]};
     user?: { role: string } | null;
     execute: (self?: boolean) => Promise<void> | void;
     quorum: { actuel: number; requis: number; };
@@ -23,7 +23,7 @@ const isCloture = computed(
   () => props.rencontre.status === StatusRencontre.CLOTURE,
 );
 
-const { data: rencontresCache } = useNuxtData<Rencontre[]>("/api/rencontre");
+const { data: rencontresCache } = useNuxtData<(Rencontre & {mandats: Mandat[]})[]>("/api/rencontre");
 const isDeletingRencontre = ref(false);
 const isMutatingMandats = ref(false);
 const mandatSnapshots = ref<Record<string, number>>({});

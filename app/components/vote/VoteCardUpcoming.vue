@@ -22,7 +22,7 @@ const props = defineProps<{
         </template>
       </div>
     </div>
-    <template #footer v-if="$slots.actions">
+    <template v-if="$slots.actions" #footer>
       <slot name="actions" />
     </template>
   </UCard>

@@ -60,13 +60,13 @@ export type Choix = {
   syndicatId?: number;
   voteId?: number;
   vote?: Vote;
-  choix: Array<{ type: string | number; mandat: number }>;
+  choix: Array<{ type: TypeChoix | number; mandat: number }>;
 };
 
 export type Syndicat = {
   id: number;
   nom: string;
-  mandats: Mandat[];
+  mandats?: Mandat[];
   defaultMandats: number;
   actif: boolean;
 };
@@ -86,8 +86,8 @@ export type Rencontre = {
   dateFin: Date | string;
   type: TypeRencontre;
   status: StatusRencontre;
-  mandats: Mandat[];
-  votes: Vote[];
+  mandats?: Mandat[];
+  votes?: Vote[];
 };
 
 export type Texte = {

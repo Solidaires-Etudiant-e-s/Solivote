@@ -39,6 +39,7 @@ const updateState = async (
 </script>
 
 <template>
+  <div>
   <AppHeader
     title="Syndicats"
     :user="user"
@@ -49,17 +50,19 @@ const updateState = async (
   </div>
 
   <div v-if="syndicatsStatus" class="flex items-center flex-wrap">
-    <template v-for="(syndicat, index) in syndicats" :key="syndicat.id">
+    <template v-for="syndicat in syndicats" :key="syndicat.id">
       <div class="w-130 text-center flex flex-col items-center">
         {{displayName(syndicat.nom)}}
-        <UInputNumber v-model="syndicat.defaultMandats"
-        @blur="
+        <UInputNumber
+        v-model="syndicat.defaultMandats"
+        :min="0" @blur="
           updateState(
             syndicat,
           )
-        " :min="0"/>
+        "/>
         <USwitch v-model="syndicat.actif" @change="updateState(syndicat)"/>
       </div>
     </template>
+  </div>
   </div>
 </template>
