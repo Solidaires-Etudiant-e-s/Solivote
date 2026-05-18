@@ -6,6 +6,11 @@ const userSchema = z
   });
 
 export default defineEventHandler(async (event) => {
+  const { role } = await getUser(event);
+  if (role !== Groupe.ADMIN) {
+    throw createError({ statusCode: 403, statusMessage: "forbidden" });
+  }
+
   const data = await readValidatedBody(event, (body) => userSchema.parse(body));
 
   const texte = await prisma.texte.delete({

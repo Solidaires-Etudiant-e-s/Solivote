@@ -9,7 +9,11 @@ const userSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-  // const data = await readValidatedBody(event, (body) => userSchema.parse(body));
+  const { role } = await getUser(event);
+  if (role !== Groupe.ADMIN) {
+    throw createError({ statusCode: 403, statusMessage: "forbidden" });
+  }
+
   const formData = await readMultipartFormData(event);
 
   if (!formData) {
