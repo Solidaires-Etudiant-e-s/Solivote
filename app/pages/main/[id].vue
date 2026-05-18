@@ -166,7 +166,6 @@ const launch = async (id: number) => {
   const previousTextes = cloneValue(textes.value ?? []);
   const previousCurrentVote = cloneValue(currentVote.value);
   const selectedVote = (textes.value ?? []).flatMap((texte) => texte.votes).find((vote) => vote.id === id);
-  console.log(selectedVote)
   if (!selectedVote) return;
 
   isLaunchingVoteId.value = id;
@@ -310,6 +309,37 @@ const panacher = async (
     });
   }
 };
+
+const condorcet = async (
+  choiceMeta: {
+    key: number | string;
+    label: string;
+  }[],
+  selected: string | undefined = undefined,
+) => {
+  const body = {
+    choix: [] as Array<{ vote: number[]; mandat: number }>,
+    syndicat: null as Syndicat | null,
+  };
+  body.syndicat = await resolveSyndicat(selected);
+  body.choix.push({
+    vote: choiceMeta.map((e) => e.key),
+    mandat: body.syndicat!.mandats[0]!.mandat,
+  });
+  console.log(body);
+  try {
+    await $fetch(`/api/vote/current`, {
+      method: "POST",
+      body,
+    });
+  } catch {
+    toast.add({
+      title: "Vote non pris en compte",
+      description: "Une erreur est survenue. Réessayez.",
+      color: "error",
+    });
+  }
+}
 
 const upcomingSearch = ref("");
 const finishedSearch = ref("");
@@ -499,15 +529,15 @@ const finishedPagedTextes = computed(() => {
           syndicat.mandats.length > 0
         " ref="voteCardLiveRef" :vote="currentVote" :user="user"
           :syndicats-remaining="syndicatsRemaining" @vote="(type, _selected) => voter(type as TypeChoix)"
-          @panacher="(panache, _selected) => panacher(panache as Panache)" />
+          @panacher="(panache, _selected) => panacher(panache as Panache)"
+          @condorcet="(choiceMeta, _vote_pour) => condorcet(choiceMeta)" />
       </template>
       <VoteCurrentAdmin
         v-else-if="user!.role === 'admin'" ref="voteCurrentAdminRef"
         :current-vote="currentVote" :user="user" :current-vote-status="currentVoteStatus"
         :syndicats-remaining="syndicatsRemaining" @vote="(type, selected) => voter(type as TypeChoix, selected)"
-        @panacher="
-          (panache, selected) => panacher(panache as Panache, selected)
-        " />
+        @panacher="(panache, selected) => panacher(panache as Panache, selected)"
+        @condorcet="(choiceMeta, selected) => condorcet(choiceMeta, selected)" />
     </div>
 
     <div class="flex justify-center">
