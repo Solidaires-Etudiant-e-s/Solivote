@@ -34,11 +34,11 @@ export default defineEventHandler(async (event) => {
   const storage = useStorage("uploads");
   const files = [] as {titre: string, nom: string}[]
   try {
-    pdfFiles.forEach(async (file) => {
+    for (const file of pdfFiles) {
       const fileName = `${Date.now()}-${file.filename!}`;
       await storage.setItemRaw(`${fileName}`, file.data);
-      files.push({titre: file.filename!, nom: fileName});
-    })
+      files.push({ titre: file.filename!, nom: fileName });
+    }
   } catch (error) {
     if (error instanceof H3Error) {
       throw error;
