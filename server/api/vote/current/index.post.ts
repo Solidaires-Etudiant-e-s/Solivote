@@ -5,7 +5,10 @@ const userSchema = z.object({
     z.object({
       type: z.union([z.string().min(1), z.number().int().min(0)]),
       mandat: z.number().int().min(0),
-    }),
+    }).or(z.object({
+      vote: z.array(z.number().int().min(0)),
+      mandat: z.number().int().min(0),
+    })),
   ),
   syndicat: z
     .object({
@@ -23,15 +26,16 @@ const userSchema = z.object({
 });
 
 export default defineEventHandler(async (event) => {
-  let { choix, syndicat } = await readValidatedBody(event, (body) =>
+  const { choix, syndicat: syndicat_selected } = await readValidatedBody(event, (body) =>
     userSchema.parse(body),
   );
-  choix = sanitizeChoix(choix);
 
-  if (!syndicat) {
-    syndicat = (await currentSyndicat(event)) ?? undefined;
+  const { name, role } = await getUser(event);
+  if (syndicat_selected?.nom.toLowerCase() !== name && role !== Groupe.ADMIN) {
+    throw createError({ statusCode: 403, statusMessage: "forbidden" });
   }
 
+  const syndicat = syndicat_selected ?? await currentSyndicat(event)
   if (!syndicat) {
     throw createError({
       statusCode: 404,
@@ -40,41 +44,6 @@ export default defineEventHandler(async (event) => {
   }
 
   const en_vote = await enVote();
-  const possibilites = en_vote.possibilites ?? [];
-  const standardChoices = new Set(["POUR", "CONTRE", "ABSTENTION", "NPPV"]);
-  const enContreChoices = new Set(["ABSTENTION", "NPPV"]);
-
-  const possibiliteIds = new Set(
-    possibilites.map((possibilite) => possibilite.id),
-  );
-  let total_mandats = 0;
-  for (const i of choix) {
-    total_mandats += i.mandat;
-
-    if (typeof i.type === "number") {
-      if (!possibiliteIds.has(i.type)) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: "choix invalid",
-        });
-      }
-    } else {
-      if (en_vote.type === "CONDORCET") {
-        throw createError({
-          statusCode: 400,
-          statusMessage: "choix invalid",
-        });
-      }
-      const allowed =
-        en_vote.type === "EN_CONTRE" ? enContreChoices : standardChoices;
-      if (!allowed.has(i.type)) {
-        throw createError({
-          statusCode: 400,
-          statusMessage: "choix invalid",
-        });
-      }
-    }
-  }
 
   const mandatRecord = await prisma.mandat.findUnique({
     where: {
@@ -84,12 +53,41 @@ export default defineEventHandler(async (event) => {
       },
     },
   });
-
   if (!mandatRecord) {
     throw createError({
       statusCode: 400,
       statusMessage: "Syndicat has no mandats for current rencontre",
     });
+  }
+
+  const possibilites = en_vote.possibilites ?? [];
+  const possibiliteIds = new Set(
+    possibilites.map((possibilite) => String(possibilite.id)),
+  );
+  const standardChoices = new Set(["POUR", "CONTRE", "ABSTENTION", "NPPV"]);
+  const enContreChoicesRaw = new Set(["ABSTENTION", "NPPV"]);
+  const enContreChoices = enContreChoicesRaw.union(possibiliteIds)
+
+
+  let total_mandats = 0;
+
+  if (en_vote.type != "CONDORCET") {
+    for (const choi of choix) {
+      total_mandats += choi.mandat;
+
+      const allowed = en_vote.type === "EN_CONTRE" ? enContreChoices : standardChoices;
+      console.log(allowed)
+      if (!allowed.has(choi.type)) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: "choix invalid",
+        });
+      }
+    }
+  } else {
+    for (const choi of choix) {
+      total_mandats += choi.mandat;
+    }
   }
 
   const expectedMandats = mandatRecord.mandat;
@@ -99,21 +97,6 @@ export default defineEventHandler(async (event) => {
       statusMessage: "mandats suplied is not the totality of mandats",
     });
   }
-
-  // const vote = await prisma.vote.findFirstOrThrow({
-  //   where: {
-  //     status: StatusVote.EN_VOTE,
-  //     texte: {
-  //       rencontre: {
-  //         mandats: {
-  //           some: {
-  //             syndicatId: syndicat.id,
-  //           },
-  //         },
-  //       },
-  //     },
-  //   },
-  // });
 
   const result = await prisma.choix.upsert({
     where: {
