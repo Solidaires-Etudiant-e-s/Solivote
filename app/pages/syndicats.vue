@@ -5,7 +5,7 @@ const { data: syndicats, status: syndicatsStatus, execute } = await useLazyFetch
 
 const refresh = async () => {
   await $fetch('/api/syndicat/populate', {method: 'POST'})
-  execute()
+  await execute()
 }
 
 const toast = useToast();

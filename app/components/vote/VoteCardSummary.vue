@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import { TypeVote, type TypeChoix } from "~/utils/backendTypes";
+import Matrice from "../condorcet/Matrice.vue";
 
 const props = defineProps<{
   vote: Vote;
@@ -103,50 +104,55 @@ const choiceGroups = computed(() => {
       </div>
     </template>
 
-    <div
-      v-for="group in sortedChoiceMeta"
-      :key="group.key"
-      class="flex flex-col gap-2 "
-    >
-      <div class="flex items-start gap-3">
-        <div class="shrink-0 self-center flex items-center w-full">
-          <div class="flex-1 min-w-0 flex flex-col gap-1.5">
-            <span class="text-sm font-medium sm:font-normal">{{
-              group.label
-            }}</span>
-            <div
-              class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden"
-            >
+    <template v-if="props.vote.type !== 'CONDORCET'">
+      <div
+        v-for="group in sortedChoiceMeta"
+        :key="group.key"
+        class="flex flex-col gap-2 "
+      >
+        <div class="flex items-start gap-3">
+          <div class="shrink-0 self-center flex items-center w-full">
+            <div class="flex-1 min-w-0 flex flex-col gap-1.5">
+              <span class="text-sm font-medium sm:font-normal">{{
+                group.label
+              }}</span>
               <div
-                class="h-full transition-[width] duration-500 ease-out"
-                :class="
-                  percentFor(group.key, choiceGroups, totalVotes) > 0
-                    ? 'bg-primary'
-                    : 'bg-secondary'
-                "
-                :style="{
-                  width: `${percentFor(group.key, choiceGroups, totalVotes)}%`,
-                }"
-              />
-              <div
-                class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
-                :class="
-                  percentFor(group.key, choiceGroups, totalVotes) === 0
-                    ? 'text-muted'
-                    : 'text-white'
-                "
+                class="relative h-8 w-full rounded-sm bg-secondary-200 overflow-hidden"
               >
-                {{ groupCount(String(group.key), choiceGroups) }}
-                ({{ percentFor(group.key, choiceGroups, totalVotes) }}%)
+                <div
+                  class="h-full transition-[width] duration-500 ease-out"
+                  :class="
+                    percentFor(group.key, choiceGroups, totalVotes) > 0
+                      ? 'bg-primary'
+                      : 'bg-secondary'
+                  "
+                  :style="{
+                    width: `${percentFor(group.key, choiceGroups, totalVotes)}%`,
+                  }"
+                />
+                <div
+                  class="absolute inset-0 flex items-center justify-start pl-3 text-xs font-semibold"
+                  :class="
+                    percentFor(group.key, choiceGroups, totalVotes) === 0
+                      ? 'text-muted'
+                      : 'text-white'
+                  "
+                >
+                  {{ groupCount(String(group.key), choiceGroups) }}
+                  ({{ percentFor(group.key, choiceGroups, totalVotes) }}%)
+                </div>
               </div>
-            </div>
-            <div class="text-xs text-muted">
-              {{ groupNames(String(group.key), choiceGroups) || "—" }}
+              <div class="text-xs text-muted">
+                {{ groupNames(String(group.key), choiceGroups) || "—" }}
+              </div>
             </div>
           </div>
         </div>
       </div>
-    </div>
+    </template>
+    <template v-else>
+      <Matrice :choix="props.vote.choix" :choice-meta="props.vote.possibilites!.map((possibility) => ({key: possibility.id, label: possibility.nom}))"/>
+    </template>
 
     <template v-if="$slots.actions" #footer>
       <slot name="actions" />

@@ -318,15 +318,14 @@ const condorcet = async (
   selected: string | undefined = undefined,
 ) => {
   const body = {
-    choix: [] as Array<{ vote: number[]; mandat: number }>,
+    choix: [] as ({vote: number[]; mandat: number})[],
     syndicat: null as Syndicat | null,
   };
   body.syndicat = await resolveSyndicat(selected);
   body.choix.push({
     vote: choiceMeta.map((e) => e.key),
-    mandat: body.syndicat!.mandats[0]!.mandat,
+    mandat: body.syndicat!.mandats![0]!.mandat,
   });
-  console.log(body);
   try {
     await $fetch(`/api/vote/current`, {
       method: "POST",
@@ -536,7 +535,7 @@ const finishedPagedTextes = computed(() => {
         v-else-if="user!.role === 'admin'" ref="voteCurrentAdminRef"
         :current-vote="currentVote" :user="user" :current-vote-status="currentVoteStatus"
         :syndicats-remaining="syndicatsRemaining" @vote="(type, selected) => voter(type as TypeChoix, selected)"
-        @panacher="(panache, selected) => panacher(panache as Panache, selected)"
+        @panacher="(panache, selected) => panacher(panache, selected)"
         @condorcet="(choiceMeta, selected) => condorcet(choiceMeta, selected)" />
     </div>
 

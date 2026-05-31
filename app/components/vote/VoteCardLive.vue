@@ -1,6 +1,6 @@
 <script setup lang="ts">
-import { UBadge } from "#components";
-import { TypeVote } from "~/utils/backendTypes";
+import Matrice from '../condorcet/Matrice.vue';
+
 
 const props = withDefaults(
   defineProps<{
@@ -179,7 +179,7 @@ watch(vote_pour, () => {
         <UInputMenu v-model="vote_pour" :items="syndicatsName" class="w-full sm:w-auto" />
       </div>
       <div
-        v-if="(props.user?.role === 'syndicat' && availableMandats > 1) || vote_pour && vote.type !== 'CONDORCET'"
+        v-if="((props.user?.role === 'syndicat' && availableMandats > 1) || vote_pour) && vote.type !== 'CONDORCET'"
         class="flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-x-4">
         <span>Panachage ({{ availableMandats }} mandat{{
           availableMandats > 1 ? "s" : ""
@@ -225,18 +225,21 @@ watch(vote_pour, () => {
           </div>
         </div>
       </template>
-      <template v-else-if="props.user?.role === 'syndicat' || vote_pour">
-        <draggable v-model="choiceMeta" :animation="150">
-          <div v-for="group in choiceMeta" :key="group.key" class="flex flex-col gap-2 drag-item">
-            {{ group.label }}
-          </div>
-        </draggable>
-        <UButton
-          class="w-full sm:w-auto"
-          @click="emit('condorcet', choiceMeta, vote_pour)">
-          Voter !
-        </UButton>
-      </template>
+      <div v-else class="flex flex-row">
+        <div v-if="props.user?.role === 'syndicat' || vote_pour" class="flex-1">
+          <draggable v-model="choiceMeta" :animation="150">
+            <div v-for="group in choiceMeta" :key="group.key" class="flex flex-col gap-2 drag-item">
+              {{ group.label }}
+            </div>
+          </draggable>
+          <UButton
+            class="w-full sm:w-auto"
+            @click="emit('condorcet', choiceMeta, vote_pour)">
+            Condorcer !
+          </UButton>
+        </div>
+        <Matrice class="flex-1" :choix="props.vote.choix" :choice-meta="props.vote.possibilites!.map((possibility) => ({key: possibility.id, label: possibility.nom}))"/>
+      </div>
       <UButton
         v-if="en_panachage" class="w-full sm:w-auto" :disabled="sum_panachage !== availableMandats"
         @click="emit('panacher', panachage, vote_pour)">
