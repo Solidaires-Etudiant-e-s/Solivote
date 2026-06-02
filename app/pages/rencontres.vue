@@ -268,7 +268,7 @@ const syndicat = ref<string[][]>([]);
           :user="user"
           :rencontre
           :execute="updateAll"
-          :quorum="{actuel: rencontre.mandats.length, requis: Math.floor((syndicats?.filter((s) => s.actif)?.length)! / 2)}"
+          :quorum="{actuel: rencontre.mandats.length, nbSyndicatsActif: (syndicats?.filter((s) => s.actif)?.length)!}"
         >
           <div v-if="user!.role === 'admin'" class="flex justify-center gap-5">
             <UForm

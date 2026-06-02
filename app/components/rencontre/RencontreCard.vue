@@ -6,12 +6,27 @@ const props = withDefaults(
     rencontre: Rencontre & {mandats: Mandat[]};
     user?: { role: string } | null;
     execute: (self?: boolean) => Promise<void> | void;
-    quorum: { actuel: number; requis: number; };
+    quorum: { actuel: number; nbSyndicatsActif: number; };
   }>(),
   {
     user: null,
   },
 );
+
+const syndicatsRequis = computed(() => {
+  switch (props.rencontre.type) {
+    case "PU":
+      return 0;
+    case "BF":
+      return props.quorum.nbSyndicatsActif * 0.15;
+    case "CF":
+      return props.quorum.nbSyndicatsActif / 2;
+    case "CONGRES":
+      return props.quorum.nbSyndicatsActif * (2/3);
+    default:
+      return 0;
+  }
+});
 
 const isDemareOrCloture = computed(
   () =>
@@ -220,10 +235,10 @@ const updateMandat = async (
       </template>
     </UTable>
 
-    <div class="flex justify-center items-center">
-      Quorum: {{props.quorum.actuel}} sur les {{props.quorum.requis}} requis
+    <div class="flex justify-center items-center" :class="{'text-error': props.quorum.actuel < Math.floor(syndicatsRequis)}">
+      Quorum: {{props.quorum.actuel}} sur les {{Math.floor(syndicatsRequis)}} requis
 
-      <UIcon name="mingcute:alert-line"/>
+      <UIcon v-if="props.quorum.actuel < Math.floor(syndicatsRequis)" name="mingcute:alert-line"/>
     </div>
 
     <template #footer>
