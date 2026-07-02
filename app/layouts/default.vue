@@ -181,7 +181,7 @@ const syncRencontreFromServer = async () => {
       <template #header>
         <NuxtLink class="flex items-center justify-center" to="/">
           <LogoItem class="h-10 w-auto" />
-          <h1 class="ml-4 font-bold text-2xl">SoliVote</h1>
+          <h1 class="ml-4 font-bold text-2xl">Legavote</h1>
         </NuxtLink>
       </template>
 

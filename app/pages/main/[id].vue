@@ -542,7 +542,7 @@ const finishedPagedTextes = computed(() => {
     <div class="flex justify-center">
       <img
         v-if="laposte"
-        src="https://cdn.discordapp.com/attachments/445213222426116145/1020330132508000348/drapeau.gif?ex=69e38b7c&is=69e239fc&hm=929ff142ed204a1561fa3cb481cbd003dc4695b3a260769f486f40222aa0b221&" >
+        src="/drapeau.gif">
     </div>
 
     <USeparator v-if="currentVote" class="w-full my-5" />
