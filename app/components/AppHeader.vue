@@ -6,9 +6,17 @@ const props = defineProps<{
   sseStatus?: string | null;
 }>();
 
+const colorMode = useColorMode()
+
 const display = computed(() => {
   return displayName(props.user?.name)
 });
+
+const isDark = computed(() => colorMode.value === 'dark')
+
+function toggleTheme() {
+  colorMode.value = isDark.value ? 'light' : 'dark'
+}
 </script>
 
 <template>
@@ -32,7 +40,7 @@ const display = computed(() => {
         class="hidden sm:flex"
       />
       <UIcon v-else name="mingcute:loading-fill" class="animate-spin"/>
-      <UColorModeSelect />
+      <UButton :icon="isDark ? 'mingcute:sun-line' : 'mingcute:moon-line'" color="neutral" variant="outline" @click="toggleTheme" />
     </template>
   </UHeader>
 </template>

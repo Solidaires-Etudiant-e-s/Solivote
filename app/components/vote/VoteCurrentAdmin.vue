@@ -58,7 +58,7 @@ const emit = defineEmits<{
   (event: "panacher", values: Panache, selected: string): void;
   (
       event: "condorcet",
-      values: { key: number | string; label: string }[],
+      values: { ranking: { key: number | string; label: string }[]; mandat: number }[],
       selected: string,
     ): void;
 }>();

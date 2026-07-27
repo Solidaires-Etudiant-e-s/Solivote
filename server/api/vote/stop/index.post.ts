@@ -14,6 +14,7 @@ export default defineEventHandler(async (event) => {
     },
     data: {
       status: StatusVote.CLOTURE,
+      hideResults: false,
     },
   });
   await broadcastVote("vote");

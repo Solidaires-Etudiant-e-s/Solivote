@@ -155,15 +155,19 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
               <UInput v-model="formState.nom" placeholder="Ex. Adoption du budget 2026" />
             </UFormField>
             <UFormField label="Type" name="type">
-              <USelect v-model="formState.type" :items="Object.values(TypeVote)" />
+              <USelect v-model="formState.type" :items="[
+                { label: 'Standard', value: TypeVote.STANDARD },
+                { label: 'En contre', value: TypeVote.EN_CONTRE },
+                { label: 'Condorcet', value: TypeVote.CONDORCET },
+              ]" />
             </UFormField>
 
             <UFormField label="Texte" name="texte">
               <USelect v-model="formState.texte" value-key="id" label-key="titre" :items="props.textes" />
             </UFormField>
 
-            <UFormField v-if="formState.type === TypeVote.CONDORCET" label="Choix" name="possibilites">
-              <UInputTags v-model="formState.possibilites" placeholder="Choix du vote condorcet" />
+            <UFormField v-if="formState.type === TypeVote.CONDORCET" label="Choix (séparé par des virgules)" name="possibilites">
+              <UInputTags v-model="formState.possibilites" placeholder="Choix du vote condorcet" class="w-full" />
             </UFormField>
 
             <UFormField v-if="formState.type === TypeVote.EN_CONTRE" label="Choix" name="possibilites">

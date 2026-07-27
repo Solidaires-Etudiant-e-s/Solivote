@@ -48,6 +48,7 @@ export type Vote = {
   nom: string;
   type: TypeVote;
   description: string | null;
+  hideResults: boolean;
   status: StatusVote;
   choix: Choix[];
   possibilites?: Possibilite[];

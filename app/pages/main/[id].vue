@@ -33,8 +33,11 @@ const { data: syndicat, status: syndicatStatus, execute: syndicatExecute } = awa
 const { data: syndicatsCurrent, execute: syndicatsCurrentExecute } = await useLazyFetch(
   "/api/syndicat/current/all",
 );
-const { data: syndicatsRemaining, execute: syndicatsRemainingExecute } =
-  await useLazyFetch("/api/syndicat/remaining");
+const syndicatsRemaining = ref<Syndicat[]>([]);
+const syndicatsRemainingExecute = async () => {
+  syndicatsRemaining.value = await $fetch<Syndicat[]>("/api/syndicat/remaining");
+};
+await syndicatsRemainingExecute();
 
 const wsStatus = ref("disconnected");
 let voteStream: EventSource | null = null;
@@ -311,9 +314,9 @@ const panacher = async (
 };
 
 const condorcet = async (
-  choiceMeta: {
-    key: number | string;
-    label: string;
+  rankings: {
+    ranking: { key: number | string; label: string }[];
+    mandat: number;
   }[],
   selected: string | undefined = undefined,
 ) => {
@@ -322,10 +325,12 @@ const condorcet = async (
     syndicat: null as Syndicat | null,
   };
   body.syndicat = await resolveSyndicat(selected);
-  body.choix.push({
-    vote: choiceMeta.map((e) => e.key),
-    mandat: body.syndicat!.mandats![0]!.mandat,
-  });
+  for (const r of rankings) {
+    body.choix.push({
+      vote: r.ranking.map((e) => e.key),
+      mandat: r.mandat,
+    });
+  }
   try {
     await $fetch(`/api/vote/current`, {
       method: "POST",
@@ -542,7 +547,7 @@ const finishedPagedTextes = computed(() => {
     <div class="flex justify-center">
       <img
         v-if="laposte"
-        src="/drapeau.gif">
+        src="https://cdn.discordapp.com/attachments/445213222426116145/1020330132508000348/drapeau.gif?ex=69e38b7c&is=69e239fc&hm=929ff142ed204a1561fa3cb481cbd003dc4695b3a260769f486f40222aa0b221&" >
     </div>
 
     <USeparator v-if="currentVote" class="w-full my-5" />
@@ -551,18 +556,18 @@ const finishedPagedTextes = computed(() => {
       <div class="w-full max-w-4xl mx-auto">
         <div class="flex flex-col sm:flex-row sm:items-center sm:justify-between my-4 gap-3">
           <h2 class="text-xl font-bold">Votes à venir</h2>
-          <UButton
-            v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
-            :variant="upcomingTextes.length ? 'soft' : 'solid'" :disabled="!isCurrent"
-            @click="openTexteModal()">
-            Nouveau Texte
-          </UButton>
-          <UButton
-            v-if="user!.role === 'admin'" icon="mingcute:add-square-line" color="primary"
-            :variant="upcomingTextes.length ? 'soft' : 'solid'" :disabled="!isCurrent"
-            @click="openVoteModal()">
-            Nouveau vote
-          </UButton>
+          <UPopover v-if="user!.role === 'admin'">
+            <UButton
+              icon="mingcute:add-square-line" color="primary"
+              :variant="upcomingTextes.length ? 'soft' : 'solid'" :disabled="!isCurrent"
+              trailing-icon="i-lucide-chevron-down">
+              Ajouter
+            </UButton>
+            <template #content>
+              <UButton label="Texte" icon="mingcute:document-2-line" variant="ghost" class="w-full justify-start rounded-none" @click="openTexteModal()" />
+              <UButton label="Vote" icon="mingcute:check-line" variant="ghost" class="w-full justify-start rounded-none" @click="openVoteModal()" />
+            </template>
+          </UPopover>
         </div>
         <UInput v-model="upcomingSearch" icon="mingcute:search-line" placeholder="Rechercher..." class="w-full mb-4" />
         <template v-if="upcomingTextes.length">
@@ -582,8 +587,8 @@ const finishedPagedTextes = computed(() => {
                   <div class="flex">
                     <UButton v-for="pdf in texte.pdfs" :key="pdf.id" icon="mingcute:document-2-line" :to="'/uploads/' + pdf.nom" external target="_blank"/>
                   </div>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <VoteCardUpcoming v-for="vote in texte.votes" :key="vote.id" :vote="vote">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mx-2">
+                    <VoteCardUpcoming v-for="vote in texte.votes" :key="vote.id" :vote="vote" class="my-2">
                       <template v-if="user!.role === 'admin'" #actions>
                         <div class="flex flex-col flex-wrap sm:flex-row gap-2">
                           <UButton
@@ -619,7 +624,7 @@ const finishedPagedTextes = computed(() => {
               </UCollapsible>
             </div>
           </div>
-          <div class="flex justify-center">
+          <div v-if="upcomingTextes.length > pageSize" class="flex justify-center">
             <UPagination v-model:page="upcomingVotesPage" :total="upcomingTextes.length" :items-per-page="pageSize" />
           </div>
         </template>
@@ -642,8 +647,8 @@ const finishedPagedTextes = computed(() => {
                   <div class="flex">
                     <UButton v-for="pdf in texte.pdfs" :key="pdf.id" icon="mingcute:document-2-line" :to="'/uploads/' + pdf.nom" external target="_blank"/>
                   </div>
-                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <VoteCardSummary v-for="vote in texte.votes" :key="vote.id" :vote="vote">
+                  <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mx-2">
+                    <VoteCardSummary v-for="vote in texte.votes" :key="vote.id" :vote="vote" class="my-2">
                       <template v-if="user!.role === 'admin'" #actions>
                         <div class="flex w-full items-center gap-2">
                           <UButton
@@ -665,7 +670,7 @@ const finishedPagedTextes = computed(() => {
               </UCollapsible>
             </div>
           </div>
-          <div class="flex justify-center">
+          <div v-if="finishedTextes.length > pageSize" class="flex justify-center">
             <UPagination v-model:page="finishedVotesPage" :total="finishedTextes.length" :items-per-page="pageSize" />
           </div>
         </template>

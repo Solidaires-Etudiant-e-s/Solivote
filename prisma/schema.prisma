@@ -12,6 +12,7 @@ model Vote {
   nom          String        @db.Text
   type         TypeVote
   description  String?       @db.Text
+  hideResults  Boolean       @default(false)
   choix        Choix[]
   possibilites Possibilite[]
   status       StatusVote    @default(INITIAL)
