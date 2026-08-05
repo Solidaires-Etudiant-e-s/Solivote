@@ -67,7 +67,7 @@ const debouncedSave = useDebounceFn(save, 500);
           <UInputNumber
             v-model="syndicat.defaultMandats"
             :min="0"
-            @update:modelValue="debouncedSave(syndicat)"
+            @update:model-value="debouncedSave(syndicat)"
           />
         </div>
         <div class="flex flex-col gap-1">

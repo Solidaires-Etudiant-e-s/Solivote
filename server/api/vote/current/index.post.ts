@@ -73,11 +73,17 @@ export default defineEventHandler(async (event) => {
 
   if (en_vote.type != "CONDORCET") {
     for (const choi of choix) {
+      if (!("type" in choi)) {
+        throw createError({
+          statusCode: 400,
+          statusMessage: "choix invalid",
+        });
+      }
       total_mandats += choi.mandat;
 
       const allowed = en_vote.type === "EN_CONTRE" ? enContreChoices : standardChoices;
       console.log(allowed)
-      if (!allowed.has(choi.type)) {
+      if (!allowed.has(String(choi.type))) {
         throw createError({
           statusCode: 400,
           statusMessage: "choix invalid",

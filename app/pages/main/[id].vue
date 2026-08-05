@@ -1,5 +1,6 @@
 <script setup lang="ts">
 import type { Ref } from "vue";
+import type { TypeChoix } from "~/utils/backendTypes";
 
 
 type Panache = Record<string, number>;
@@ -16,21 +17,21 @@ if (useRoute().params.id !== "current" && Number.isNaN(rencontreId.value)) {
   })
 }
 
-const { data: textes, status: textesStatus } = await useLazyFetch(
+const { data: textes, status: textesStatus } = await useLazyFetch<TextePayload[]>(
   "/api/votes",
   { query: { id: rencontreId } },
 );
 const { data: user, status: userStatus } = await useLazyFetch("/api/role");
 const { data: currentVote, status: currentVoteStatus } =
-  await useLazyFetch<VotePayload | null>("/api/vote/current", {
+  await useLazyFetch<VotePayload & { texte: Texte } | null>("/api/vote/current", {
     key: "vote-current",
   });
 const { data: rencontre, status: rencontreStatus } =
-  await useLazyFetch("/api/rencontre/current", { query: { id: rencontreId } });
-const { data: syndicat, status: syndicatStatus, execute: syndicatExecute } = await useLazyFetch(
+  await useLazyFetch<Rencontre | null>("/api/rencontre/current", { query: { id: rencontreId } });
+const { data: syndicat, status: syndicatStatus, execute: syndicatExecute } = await useLazyFetch<Syndicat | null>(
   "/api/syndicat/current",
 );
-const { data: syndicatsCurrent, execute: syndicatsCurrentExecute } = await useLazyFetch(
+const { data: syndicatsCurrent, execute: syndicatsCurrentExecute } = await useLazyFetch<Syndicat[]>(
   "/api/syndicat/current/all",
 );
 const syndicatsRemaining = ref<Syndicat[]>([]);
@@ -43,7 +44,6 @@ const wsStatus = ref("disconnected");
 let voteStream: EventSource | null = null;
 let rencontreStream: EventSource | null = null;
 const { sync } = usePatchedFetchState();
-const laposte = ref()
 
 
 watchEffect(() => {
@@ -66,8 +66,8 @@ const syncVotesFromServer = async () => {
 
 const syncCurrentVoteFromServer = async () => {
   await sync(
-    currentVote as Ref<VotePayload | null | undefined>,
-    () => $fetch<VotePayload | null>("/api/vote/current"),
+    currentVote as Ref<(VotePayload & { texte: Texte }) | null | undefined>,
+    () => $fetch<(VotePayload & { texte: Texte }) | null>("/api/vote/current"),
     "value",
   );
   await syndicatsRemainingExecute();
@@ -159,7 +159,7 @@ const resolveSyndicat = async (selected?: string): Promise<Syndicat | null> => {
   );
   if (fromCurrent) return fromCurrent;
 
-  const fallback = await $fetch(`/api/syndicat/${selected}`);
+  const fallback = await $fetch<Syndicat>(`/api/syndicat/${selected}`);
   return fallback;
 };
 
@@ -182,11 +182,15 @@ const launch = async (id: number) => {
 
     }));
   }
+  const parentTexte = (textes.value ?? []).find((texte) =>
+    texte.votes.some((vote) => vote.id === id),
+  );
   currentVote.value = {
     ...selectedVote,
     status: StatusVote.EN_VOTE,
     choix: selectedVote.choix ?? [],
     possibilites: selectedVote.possibilites ?? [],
+    texte: parentTexte as Texte,
   };
 
   try {
@@ -210,12 +214,8 @@ const voter = async (
   selected: string | undefined = undefined,
 ) => {
   const body = {
-    choix: [] as Array<{ type: string | number; mandat: number }>,
-    syndicat: null as {
-      id: number;
-      nom: string;
-      mandats: Array<{ mandat: number; rencontreId?: number }>;
-    } | null,
+    choix: [] as Array<{ type: TypeChoix | number; mandat: number }>,
+    syndicat: null as Syndicat | null,
   };
 
   body.syndicat = await resolveSyndicat(selected);
@@ -264,14 +264,14 @@ const panacher = async (
   selected: string | undefined = undefined,
 ) => {
   const body = {
-    choix: [] as Array<{ type: string | number; mandat: number }>,
+    choix: [] as Array<{ type: TypeChoix | number; mandat: number }>,
     syndicat: null as Syndicat | null,
   };
 
   for (const type in panache) {
     const mandat = Number(panache[type]);
     if (!Number.isFinite(mandat) || mandat < 0) continue;
-    body.choix.push({ type, mandat: Math.trunc(mandat) });
+    body.choix.push({ type: type as TypeChoix, mandat: Math.trunc(mandat) });
   }
 
   body.syndicat = await resolveSyndicat(selected);
@@ -327,7 +327,7 @@ const condorcet = async (
   body.syndicat = await resolveSyndicat(selected);
   for (const r of rankings) {
     body.choix.push({
-      vote: r.ranking.map((e) => e.key),
+      vote: r.ranking.map((e) => Number(e.key)),
       mandat: r.mandat,
     });
   }
@@ -377,16 +377,6 @@ const fuzzyFilterTextes = (list: TextePayload[], query: string) => {
   const q = query.trim();
   if (!q) return list;
 
-  if (q === 'laposte') {
-    console.log("Laposte !!!!")
-    laposte.value = new Audio('/laposte.mp3')
-    laposte.value.volume = 0.01
-    laposte.value.play()
-  } else {
-    laposte.value?.pause()
-    laposte.value = null
-  }
-
   return list.map((texte) => {
     if (fuzzyMatch(q, texte.titre)) return texte;
 
@@ -423,7 +413,7 @@ const finishedTextes = computed(() => {
 const voteToDelete = ref<number | null>(null);
 const showNewVote = ref(false);
 const showNewTexte = ref(false);
-const voteEdited = ref<VotePayload | null>(null);
+const voteEdited = ref<(VotePayload & { texteId: number }) | null>(null);
 const showDeleteModal = computed({
   get: () => voteToDelete.value !== null,
   set: (val) => {
@@ -477,7 +467,7 @@ const deleteTexte = async (texteId: number) => {
   await $fetch("/api/texte", {method: 'DELETE', body: {texteId}})
 }
 
-const openVoteModal = (vote: VotePayload | null = null) => {
+const openVoteModal = (vote: (VotePayload & { texteId: number }) | null = null) => {
   voteEdited.value = vote;
   showNewVote.value = true;
 };
@@ -530,7 +520,7 @@ const finishedPagedTextes = computed(() => {
           currentVote &&
           syndicatStatus === 'success' &&
           syndicat &&
-          syndicat.mandats.length > 0
+          (syndicat.mandats?.length ?? 0) > 0
         " ref="voteCardLiveRef" :vote="currentVote" :user="user"
           :syndicats-remaining="syndicatsRemaining" @vote="(type, _selected) => voter(type as TypeChoix)"
           @panacher="(panache, _selected) => panacher(panache as Panache)"
@@ -542,12 +532,6 @@ const finishedPagedTextes = computed(() => {
         :syndicats-remaining="syndicatsRemaining" @vote="(type, selected) => voter(type as TypeChoix, selected)"
         @panacher="(panache, selected) => panacher(panache, selected)"
         @condorcet="(choiceMeta, selected) => condorcet(choiceMeta, selected)" />
-    </div>
-
-    <div class="flex justify-center">
-      <img
-        v-if="laposte"
-        src="https://cdn.discordapp.com/attachments/445213222426116145/1020330132508000348/drapeau.gif?ex=69e38b7c&is=69e239fc&hm=929ff142ed204a1561fa3cb481cbd003dc4695b3a260769f486f40222aa0b221&" >
     </div>
 
     <USeparator v-if="currentVote" class="w-full my-5" />
@@ -612,7 +596,7 @@ const finishedPagedTextes = computed(() => {
                               class="w-full sm:w-1/2 justify-center" :disabled="isDeletingVote ||
                                 vote.status !== 'INITIAL' ||
                                 vote.choix.length !== 0
-                                " @click.prevent="openVoteModal(vote)">
+                                " @click.prevent="openVoteModal({ ...vote, texteId: texte.id })">
                               Éditer
                             </UButton>
                           </div>

@@ -1,7 +1,7 @@
 import type { H3Event } from "h3";
 import type { Syndicat } from "../../app/utils/backendTypes";
 
-export async function currentSyndicat(event: H3Event): Promise<Syndicat> {
+export async function currentSyndicat(event: H3Event): Promise<Syndicat | null> {
   const nom = String(event.node.req.headers["ynh_user"] ?? "");
 
   const rencontre = await currentRencontre();
@@ -14,6 +14,10 @@ export async function currentSyndicat(event: H3Event): Promise<Syndicat> {
       mandats: {
         where: {
           rencontreId: rencontre?.id,
+        },
+        include: {
+          syndicat: true,
+          rencontre: true,
         },
       },
     },

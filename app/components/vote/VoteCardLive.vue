@@ -117,7 +117,7 @@ const availableMandats = computed(() => {
   const list = (syndicats.value as Syndicat[] | null) ?? [];
   const found = list.find((item) => item.nom.toLowerCase() === name);
   if (!found) return 0;
-  const forCurrentRencontre = found.mandats.filter(
+  const forCurrentRencontre = (found.mandats ?? []).filter(
     (m) => m.rencontreId === props.vote.texte.rencontreId,
   );
   return forCurrentRencontre.reduce((sum, m) => sum + (m.mandat ?? 0), 0);
@@ -360,7 +360,7 @@ watch(() => props.vote.id, () => {
           </UButton>
         </template>
         <template v-else>
-          <Matrice v-if="!vote.hideResults" :choix="props.vote.choix" :choice-meta="props.vote.possibilites!.map((possibility) => ({key: possibility.id, label: possibility.nom}))"/>
+          <Matrice v-if="!vote.hideResults" :choix="props.vote.choix as unknown as CondorcetChoix[]" :choice-meta="props.vote.possibilites!.map((possibility) => ({key: possibility.id, label: possibility.nom}))"/>
           <div v-else class="text-sm text-muted italic py-4 text-center">
             Les résultats sont cachés par un administrateur.
           </div>

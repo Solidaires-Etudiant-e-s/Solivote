@@ -1,7 +1,7 @@
 <script setup lang="ts">
 const props = defineProps<{
   user?: { role: string; name?: string } | null;
-  currentVote?: Vote | null;
+  currentVote?: (VotePayload & { texte: Texte }) | null;
   currentVoteStatus?: string | null;
   syndicatsRemaining?: Syndicat[] | null;
 }>();

@@ -2,7 +2,7 @@
 import { toRaw, type Ref } from "vue";
 
 const { data: rencontres, status: rencontreStatus } =
-  useLazyFetch("/api/rencontre");
+  useLazyFetch<(Rencontre & { mandats: Mandat[] })[]>("/api/rencontre");
 const { data: user, status: userStatus } = await useLazyFetch("/api/role");
 const { data: syndicats, status: _syndicatsStatus } = await useLazyFetch("/api/syndicat");
 const { sync } = usePatchedFetchState();
@@ -102,7 +102,8 @@ async function onSyndicatAdd(index: number, id: number) {
       rencontre.mandats.push({
         syndicatId: tempId,
         rencontreId: id,
-        syndicat: { id: tempId, nom },
+        syndicat: { id: tempId, nom, defaultMandats: 0, actif: true },
+        rencontre,
         mandat: 1,
       });
       tempId -= 1;

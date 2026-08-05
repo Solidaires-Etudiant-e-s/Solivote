@@ -155,7 +155,9 @@ async function onSubmit(event: FormSubmitEvent<Schema>) {
               <UInput v-model="formState.nom" placeholder="Ex. Adoption du budget 2026" />
             </UFormField>
             <UFormField label="Type" name="type">
-              <USelect v-model="formState.type" :items="[
+              <USelect
+                v-model="formState.type"
+                :items="[
                 { label: 'Standard', value: TypeVote.STANDARD },
                 { label: 'En contre', value: TypeVote.EN_CONTRE },
                 { label: 'Condorcet', value: TypeVote.CONDORCET },

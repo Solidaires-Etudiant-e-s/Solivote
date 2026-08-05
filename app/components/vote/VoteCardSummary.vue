@@ -10,16 +10,20 @@ const choiceMeta: { key: TypeChoix | number; label: string }[] =
   (() => {
     if (props.vote.type == TypeVote.STANDARD) {
       return [
-        { key: "POUR", label: "Pour" },
-        { key: "CONTRE", label: "Contre" },
-        { key: "ABSTENTION", label: "Abstention" },
-        { key: "NPPV", label: "NPPV" },
+        { key: "POUR" as TypeChoix, label: "Pour" },
+        { key: "CONTRE" as TypeChoix, label: "Contre" },
+        { key: "ABSTENTION" as TypeChoix, label: "Abstention" },
+        { key: "NPPV" as TypeChoix, label: "NPPV" },
       ]
     }
     return [
-      { key: "ABSTENTION", label: "Abstention" },
-      { key: "NPPV", label: "NPPV" }
-    ].concat(props.vote.possibilites!.map((v => ({key: v.id, label: v.nom}))))
+      { key: "ABSTENTION" as TypeChoix, label: "Abstention" },
+      { key: "NPPV" as TypeChoix, label: "NPPV" },
+      ...props.vote.possibilites!.map((v) => ({
+        key: v.id as TypeChoix | number,
+        label: v.nom,
+      })),
+    ] as { key: TypeChoix | number; label: string }[];
   })();
 
 const sortedChoiceMeta = computed(() =>
@@ -151,7 +155,7 @@ const choiceGroups = computed(() => {
       </div>
     </template>
     <template v-else>
-      <Matrice :choix="props.vote.choix" :choice-meta="props.vote.possibilites!.map((possibility) => ({key: possibility.id, label: possibility.nom}))"/>
+      <Matrice :choix="props.vote.choix as unknown as CondorcetChoix[]" :choice-meta="props.vote.possibilites!.map((possibility) => ({key: possibility.id, label: possibility.nom}))"/>
     </template>
 
     <template v-if="$slots.actions" #footer>

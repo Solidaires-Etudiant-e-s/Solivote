@@ -47,7 +47,7 @@ const result = computed(() => {
         <div class="grid text-center text-sm" :style="'grid-template-columns: repeat(' + (matrix.length + 1) + ', minmax(0, 1fr))'">
           <template v-for="(row, rowIndex) in matrix" :key="rowIndex">
             <template v-if="rowIndex === 0">
-              <div></div>
+              <div class="shrink-0" />
               <template v-for="(_, colIndex) in row" :key="colIndex">
                 <div class="font-medium text-xs px-1 truncate" :title="props.choiceMeta[colIndex]?.label">{{props.choiceMeta[colIndex]?.label}}</div>
               </template>

@@ -39,7 +39,7 @@
     "test": "vitest run"
   },
   "prisma": {
-    "seed": "node prisma/seed.js"
+    "seed": "bun prisma/seed.ts"
   },
   "type": "module",
   "devDependencies": {
