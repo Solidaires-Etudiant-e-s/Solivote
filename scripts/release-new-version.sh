@@ -83,8 +83,8 @@ echo
 echo "Updating $MANIFEST..."
 MANIFEST_PATH="$PROJECT_DIR/$MANIFEST"
 sed -i "s/^version = \".*\"/version = \"${NEXT_VERSION}~ynh1\"/" "$MANIFEST_PATH"
-sed -i "s|^url = \".*\"|url = \"$TARBALL_URL\"|" "$MANIFEST_PATH"
-sed -i "s/^sha256 = \".*\"/sha256 = \"$SHA256\"/" "$MANIFEST_PATH"
+sed -i "s|^\( *\)url = \".*\"|\1url = \"$TARBALL_URL\"|" "$MANIFEST_PATH"
+sed -i "s/^\( *\)sha256 = \".*\"/\1sha256 = \"$SHA256\"/" "$MANIFEST_PATH"
 
 YNH_DIR="$PROJECT_DIR/../solivote_ynh"
 
